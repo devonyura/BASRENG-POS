@@ -30,6 +30,22 @@ class TransactionsController extends ResourceController
       return $this->fail("Invalid JSON Format", 400);
     }
 
+    $isReseller = !empty($input['is_reseller']);
+    $discountInfo = $this->calculateResellerDiscount($input['transaction_details'], $isReseller);
+    $discountAmount = $discountInfo['discount'];
+
+    $totalBeforeDiscount = 0;
+    foreach ($input['transaction_details'] as $detail) {
+      $totalBeforeDiscount += ((int) $detail['price'] * (int) $detail['quantity']);
+    }
+    $totalPrice = max(0, $totalBeforeDiscount - $discountAmount);
+
+    $cashAmount = $input['cash_amount'] ?? null;
+    $changeAmount = $input['change_amount'] ?? null;
+    if (($input['payment_method'] ?? '') === 'cash' && $cashAmount !== null) {
+      $changeAmount = (int) $cashAmount - $totalPrice;
+    }
+
     // Generate transaction code
     $now = new \DateTime();
     $randomNumber = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
@@ -39,11 +55,11 @@ class TransactionsController extends ResourceController
     $transactionData = [
       'user_id'          => $input['user_id'],
       'transaction_code' =>  $transaction_code,
-      'total_price' => $input['total_price'],
+      'total_price' => $totalPrice,
       'payment_method' => $input['payment_method'],
       'is_online_order' => $input['is_online_order'],
-      'cash_amount' => $input['cash_amount'],
-      'change_amount' => $input['change_amount'],
+      'cash_amount' => $cashAmount,
+      'change_amount' => $changeAmount,
       'created_at' => date('Y-m-d H:i:s')
     ];
 
@@ -136,12 +152,20 @@ class TransactionsController extends ResourceController
       ];
     }, $transaction_details);
 
+    $totalBeforeDiscount = array_sum(array_map(function ($detail) {
+      return (int) $detail['subtotal'];
+    }, $transaction_details));
+    $discountInfo = $this->calculateResellerDiscount($transaction_details, true);
+    $maxDiscount = max(0, $totalBeforeDiscount - (int) $transaction['total_price']);
+    $discountAmount = min($discountInfo['discount'], $maxDiscount);
+
     // Format response
     $data = [
       'transaction_code' => $transaction['transaction_code'],
       'cashier' => $transaction['cashier'],
       'products' => $products,
       'total_price' => (int) $transaction['total_price'],
+      'discount_amount' => (int) $discountAmount,
       'cash_amount' => (int) $transaction['cash_amount'],
       'change_amount' => (int) $transaction['change_amount'],
       'is_online_order' => (int) $transaction['is_online_order'],
@@ -156,6 +180,51 @@ class TransactionsController extends ResourceController
       'status' => 'success',
       'data'   => $data
     ]);
+  }
+
+  private function calculateResellerDiscount(array $transactionDetails, bool $isReseller): array
+  {
+    if (!$isReseller) {
+      return [
+        'discount' => 0,
+        'total_grams' => 0,
+      ];
+    }
+
+    $variantGrams = [];
+    $totalGrams = 0;
+
+    foreach ($transactionDetails as $detail) {
+      $quantity = (int) ($detail['quantity'] ?? 0);
+      $unitGrams = (int) ($detail['weight_grams'] ?? 500);
+      $productId = (string) ($detail['product_id'] ?? '');
+      $grams = $quantity * $unitGrams;
+      $variantGrams[$productId] = ($variantGrams[$productId] ?? 0) + $grams;
+      $totalGrams += $grams;
+    }
+
+    if ($totalGrams < 3000 || $totalGrams % 500 !== 0) {
+      return [
+        'discount' => 0,
+        'total_grams' => $totalGrams,
+      ];
+    }
+
+    $discount = 0;
+    $mixGrams = 0;
+    foreach ($variantGrams as $grams) {
+      $fullKg = intdiv($grams, 1000);
+      $discount += $fullKg * 5000;
+      $mixGrams += $grams % 1000;
+    }
+
+    $mixedKg = intdiv($mixGrams, 1000);
+    $discount += $mixedKg * 3000;
+
+    return [
+      'discount' => $discount,
+      'total_grams' => $totalGrams,
+    ];
   }
 
 
