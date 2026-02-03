@@ -1,0 +1,67 @@
+h2 {
+  text-align: center;
+  font-weight: 600;
+}
+
+img {
+  width: 300px;
+}
+
+ion-card-title {
+  font-size: 1.50rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+/* ion-card {
+  margin: 4px;
+  padding: 0 !important;
+} */
+
+ion-card-header {
+  padding-bottom: 8px;
+}
+
+
+ion-card-header,
+ion-card-content {
+  padding-left: 0;
+  padding-top: 0;
+  padding-right: 0;
+  -webkit-padding-start: 0 !important;
+  padding-inline-start: 0 !important;
+  -webkit-padding-end: 0 !important;
+  padding-inline-end: 0 !important;
+}
+
+ion-card-content {
+  padding-bottom: 0 !important;
+}
+
+div.amount,
+div.amount p {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  font-weight: 400;
+  margin: 0;
+}
+
+div.amount.price {
+  justify-content: start;
+}
+
+div.amount.price span,
+div.amount p span {
+  font-weight: 600;
+}
+
+div.amount p b,
+div.amount.title b {
+  font-weight: 600;
+}
+
+ion-col.img-card {
+  display: flex;
+  align-items: center;
+}
