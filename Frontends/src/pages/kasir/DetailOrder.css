@@ -1,0 +1,129 @@
+.ion-margin-top {
+  text-align: center;
+}
+
+ion-modal ion-label {
+  font-weight: 500;
+  font-size: 1.3rem;
+}
+
+.col-trash {
+  display: flex;
+  justify-content: center;
+  align-items: center
+}
+
+.amount.title,
+.amount.subtotal {
+  justify-content: start;
+  margin: 0 !important;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-center ion-button {
+  width: 100%;
+}
+
+
+/* extras */
+
+.btn-checkout {
+  margin-top: 15px;
+}
+
+.space {
+  height: 100px;
+}
+
+/* .cash {
+  display: none;
+} */
+
+
+/* order online */
+.button-wrapper ion-button {
+  width: 100vw;
+}
+
+.online-order-receipt {
+  border-top: 1px solid black;
+}
+
+.online-order-receipt td {
+  padding-top: 15px;
+}
+
+.tr-title {
+  font-weight: 600;
+}
+
+.text-left {
+  text-align: left !important;
+}
+
+/* Payment method modal */
+.payment-method {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 80%;
+}
+
+.payment-method div.transfer-bank {
+  border: 1px solid black;
+  padding: 10px;
+}
+
+.payment-method div.QRIS {
+  /* padding: 20px; */
+  margin-top: 50px;
+}
+
+.payment-method {
+  font-size: 1.2rem;
+}
+
+.payment-method h2 {
+  margin-bottom: 0;
+  font-size: 1.7rem;
+}
+
+.payment-method h3 {
+  margin-top: 5px;
+  font-size: 1.2rem;
+}
+
+.payment-method h4 {
+  margin-top: 20px;
+  font-size: 1.6rem;
+}
+
+.hidden-button {
+  display: none;
+}
+
+/* input */
+ion-input.input-digit {
+  opacity: 1 !important;
+  --background: #0da100;
+  --color: #ffffff;
+  --placeholder-color: #ddd;
+  --placeholder-opacity: 0.8;
+  --padding-bottom: 10px;
+  --padding-end: 10px;
+  --padding-start: 10px;
+  --padding-top: 10px;
+}
+
+.amount {
+  text-transform: capitalize;
+  font-size: 1.1rem;
+}
