@@ -1,9 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonItem } from "@ionic/react";
 import { add, remove, trashBin } from "ionicons/icons";
-import { rupiahFormat } from "../hooks/formatting";
-import { DataProduct } from '../hooks/restAPIRequest'
-
+import { rupiahFormat, formatProductName } from "../hooks/formatting";
 // Redux
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart, updateQty, removeFromCart } from "../redux/cartSlice";
@@ -21,12 +19,15 @@ const ProductCartItem: React.FC<any> = ({ product }) => {
 
   const ensureItemInCart = (qty: number) => {
     if (!itemInCart) {
+      const parsedWeightGrams = Number(product.weight_grams);
+      const weightGrams = Number.isNaN(parsedWeightGrams) ? 500 : parsedWeightGrams;
       dispatch(addToCart({
         id: product.id,
         name: product.name,
         price: Number(product.price),
         quantity: qty,
-        subtotal: Number(product.price)
+        subtotal: Number(product.price),
+        weight_grams: weightGrams
       }))
     }
   }
@@ -50,7 +51,7 @@ const ProductCartItem: React.FC<any> = ({ product }) => {
         <IonRow>
           <IonCol size="9">
             <div className='amount title'>
-              <b>{product.name}</b>
+              <b>{formatProductName(product.name, product.weight_grams)}</b>
             </div>
             <div className='amount subtotal'>
               <p>Subtotal : <b>{rupiahFormat(subtotal)}</b></p>
