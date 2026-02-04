@@ -43,6 +43,7 @@ export interface AlertMessageProps {
 const productSchema = z.object({
   name: z.string().min(1, 'Nama produk harus diisi'),
   price: z.string().min(1, 'Harga harus diisi'),
+  quantity: z.string().min(1, 'Quantity harus diisi'),
   category_id: z.string().min(1, 'Kategori harus dipilih'),
   subcategory_id: z.string().nullable().optional()
 });
@@ -75,6 +76,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     defaultValues: {
       name: '',
       price: '',
+      quantity: '',
       category_id: '',
       subcategory_id: null
     }
@@ -112,6 +114,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       reset({
         name: initialProduct.name,
         price: initialProduct.price,
+        quantity: initialProduct.quantity ?? '',
         category_id: initialProduct.category_id,
         subcategory_id: initialProduct.subcategory_id || null
       });
@@ -124,6 +127,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     reset({
       name: '',
       price: '',
+      quantity: '',
       category_id: '',
       subcategory_id: null
     });
@@ -204,6 +208,23 @@ const ProductForm: React.FC<ProductFormProps> = ({
             />
           </IonItem>
           {errors.price && <p className="ion-text-error">{errors.price.message}</p>}
+
+          <IonItem>
+            <IonLabel position="stacked">Quantity (gr)</IonLabel>
+            <Controller
+              control={control}
+              name="quantity"
+              render={({ field }) => (
+                <IonInput
+                  type="number"
+                  {...field}
+                  value={field.value}
+                  onIonChange={e => field.onChange(e.detail.value!)}
+                />
+              )}
+            />
+          </IonItem>
+          {errors.quantity && <p className="ion-text-error">{errors.quantity.message}</p>}
 
           <IonItem>
             <IonLabel position="stacked">Kategori</IonLabel>
