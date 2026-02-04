@@ -62,8 +62,9 @@ class ProductsController extends ResourceController
   {
     $rules = [
       'category_id' => 'required|integer',
-      'name'        => 'required|min_length[3]|is_unique[products.name]',
-      'price'       => 'required|decimal'
+      'name'        => 'required|min_length[3]',
+      'price'       => 'required|decimal',
+      'weight_grams' => 'integer',
     ];
 
     if (!$this->validate($rules)) {
@@ -75,7 +76,8 @@ class ProductsController extends ResourceController
       'category_id' => $data->category_id,
       'subcategory_id' => $data->subcategory_id === '' ? null : $data->subcategory_id,
       'name'        => $data->name,
-      'price'       => $data->price
+      'price'       => $data->price,
+      'weight_grams' => $data->weight_grams,
     ];
 
     try {
@@ -116,7 +118,8 @@ class ProductsController extends ResourceController
       'id' => 'required|integer',
       'category_id' => 'required|integer',
       'name'        => 'required|min_length[3]',
-      'price'       => 'required|decimal'
+      'price'       => 'required|decimal',
+      'weight_grams' => 'integer'
     ];
 
     $data = $this->request->getJSON();
@@ -137,6 +140,7 @@ class ProductsController extends ResourceController
       'category_id' => $data->category_id,
       'subcategory_id' => $data->subcategory_id,
       'price'       => $data->price,
+      'weight_grams' => $data->weight_grams,
     ];
 
     try {

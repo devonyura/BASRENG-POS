@@ -1,5 +1,12 @@
 import React from "react";
-import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonItem } from "@ionic/react";
+import {
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonButton,
+  IonIcon,
+  IonItem,
+} from "@ionic/react";
 import { add, remove, trashBin } from "ionicons/icons";
 import { rupiahFormat, formatProductName } from "../hooks/formatting";
 // Redux
@@ -7,68 +14,73 @@ import { useDispatch, useSelector } from "react-redux";
 import { addToCart, updateQty, removeFromCart } from "../redux/cartSlice";
 import { RootState } from "../redux/store";
 
-
 const ProductCartItem: React.FC<any> = ({ product }) => {
+  const dispatch = useDispatch();
+  const cartItems = useSelector((state: RootState) => state.cart.items);
 
-  const dispatch = useDispatch()
-  const cartItems = useSelector((state: RootState) => state.cart.items)
-
-  const itemInCart = cartItems.find(item => item.id === product.id)
-  const quantity = itemInCart?.quantity ?? 0
-  const subtotal = itemInCart?.subtotal ?? 0
+  const itemInCart = cartItems.find((item) => item.id === product.id);
+  const quantity = itemInCart?.quantity ?? 0;
+  const subtotal = itemInCart?.subtotal ?? 0;
 
   const ensureItemInCart = (qty: number) => {
     if (!itemInCart) {
-      const parsedWeightGrams = Number(product.weight_grams);
-      const weightGrams = Number.isNaN(parsedWeightGrams) ? 500 : parsedWeightGrams;
-      dispatch(addToCart({
-        id: product.id,
-        name: product.name,
-        price: Number(product.price),
-        quantity: qty,
-        subtotal: Number(product.price),
-        weight_grams: weightGrams
-      }))
+      dispatch(
+        addToCart({
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          quantity: qty,
+          subtotal: Number(product.price),
+          weight_grams: Number(product.weight_grams),
+        }),
+      );
     }
-  }
+  };
 
   const handleAdd = () => {
     ensureItemInCart(1);
-    dispatch(updateQty({ id: product.id, quantity: quantity + 1 }))
-  }
+    dispatch(updateQty({ id: product.id, quantity: quantity + 1 }));
+  };
 
   const handleRemove = () => {
-    dispatch(updateQty({ id: product.id, quantity: quantity - 1 }))
-  }
+    dispatch(updateQty({ id: product.id, quantity: quantity - 1 }));
+  };
 
   const handleReset = () => {
-    dispatch(removeFromCart(product.id))
-  }
+    dispatch(removeFromCart(product.id));
+  };
 
   return (
     <IonItem>
       <IonGrid>
         <IonRow>
           <IonCol size="9">
-            <div className='amount title'>
-              <b>{formatProductName(product.name, product.weight_grams)}</b>
+            <div className="amount title">
+              <b>{`${product.name} ${product.weight_grams}`}</b>
             </div>
-            <div className='amount subtotal'>
-              <p>Subtotal : <b>{rupiahFormat(subtotal)}</b></p>
+            <div className="amount subtotal">
+              <p>
+                Subtotal : <b>{rupiahFormat(subtotal)}</b>
+              </p>
             </div>
-            <div className='amount'>
+            <div className="amount">
               <p>Qty:</p>
-              <IonButton shape="round" size='default' onClick={handleRemove}>
+              <IonButton shape="round" size="default" onClick={handleRemove}>
                 <IonIcon slot="icon-only" icon={remove}></IonIcon>
               </IonButton>
               <span>{quantity}</span>
-              <IonButton shape="round" size='default' onClick={handleAdd}>
+              <IonButton shape="round" size="default" onClick={handleAdd}>
                 <IonIcon slot="icon-only" icon={add}></IonIcon>
               </IonButton>
             </div>
           </IonCol>
-          <IonCol class='col-trash' size="3">
-            <IonButton shape="round" color={'danger'} size='default' onClick={handleReset}>
+          <IonCol class="col-trash" size="3">
+            <IonButton
+              shape="round"
+              color={"danger"}
+              size="default"
+              onClick={handleReset}
+            >
               <IonIcon slot="icon-only" icon={trashBin}></IonIcon>
             </IonButton>
           </IonCol>

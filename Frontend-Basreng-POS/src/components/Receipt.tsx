@@ -1,10 +1,24 @@
-import React, { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
-import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonItem, useIonViewWillEnter } from "@ionic/react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import {
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonButton,
+  IonIcon,
+  IonItem,
+  useIonViewWillEnter,
+} from "@ionic/react";
 import { add, remove, trashBin } from "ionicons/icons";
 import { rupiahFormat, formatProductName } from "../hooks/formatting";
-import { getBranch } from '../hooks/restAPIRequest'
+import { getBranch } from "../hooks/restAPIRequest";
 import { useAuth } from "../hooks/useAuthCookie";
-import "./Receipt.css"
+import "./Receipt.css";
 
 interface ReceiptProps {
   // branch: string[];
@@ -15,11 +29,11 @@ interface ReceiptProps {
   total: number;
   isOnlineOrders: boolean;
   customerInfo: {
-    name: string
-    phone: string
-    address: string
-    notes: string
-  }
+    name: string;
+    phone: string;
+    address: string;
+    notes: string;
+  };
   cartItems: {
     id: string;
     name: string;
@@ -28,9 +42,10 @@ interface ReceiptProps {
     weight_grams?: number;
   }[];
   receiptNoteNumber: string | null;
+  isReseller: boolean;
+  discount: number;
   // branchData: BranchData | null;
 }
-
 
 export interface BranchData {
   branch_id: string;
@@ -39,30 +54,44 @@ export interface BranchData {
 }
 
 const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
-  const { cash, change, total, isOnlineOrders, customerInfo, cartItems, receiptNoteNumber } = props;
+  const {
+    cash,
+    change,
+    total,
+    isOnlineOrders,
+    customerInfo,
+    cartItems,
+    receiptNoteNumber,
+    isReseller,
+    discount,
+  } = props;
 
   const { username } = useAuth();
 
   // const [branchDataState] = useState<BranchData | null>(branchData);
 
   return (
-    <div className='receipt-container' ref={ref}>
+    <div className="receipt-container" ref={ref}>
       <table className="receipt">
         <thead>
-          <tr className='receipt-title'>
+          <tr className="receipt-title">
             <th colSpan={4}>- Basreng Ghosting Palu -</th>
           </tr>
           <tr>
-            <th colSpan={4}><span></span></th>
-          </tr>
-          <tr>
-            <th className="small-text" colSpan={3}>NO: {receiptNoteNumber}</th>
-            <th>
-              Kasir: {username}
+            <th colSpan={4}>
+              <span></span>
             </th>
           </tr>
           <tr>
-            <th colSpan={4}><span></span></th>
+            <th className="small-text" colSpan={3}>
+              NO: {receiptNoteNumber}
+            </th>
+            <th>Kasir: {username}</th>
+          </tr>
+          <tr>
+            <th colSpan={4}>
+              <span></span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -71,12 +100,22 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
               <td>{formatProductName(item.name, item.weight_grams)}</td>
               <td className="small-text">{item.quantity}x</td>
               <td>{rupiahFormat(item.price, false)}</td>
-              <td>{rupiahFormat((item.price * item.quantity), false)}</td>
+              <td>{rupiahFormat(item.price * item.quantity, false)}</td>
             </tr>
           ))}
+          {isReseller && (
+            <tr>
+              <td className="tr-title" colSpan={3}>
+                Diskon Reseller
+              </td>
+              <td className="tr-title">-{rupiahFormat(discount, false)}</td>
+            </tr>
+          )}
           <tr>
-            <td className='tr-title' colSpan={3}>Total</td>
-            <td className='tr-title'>{rupiahFormat(total, false)}</td>
+            <td className="tr-title" colSpan={3}>
+              Total
+            </td>
+            <td className="tr-title">{rupiahFormat(total, false)}</td>
           </tr>
           <tr>
             <td colSpan={3}>Tunai</td>
@@ -88,25 +127,37 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
           </tr>
           {isOnlineOrders && (
             <>
-              <tr className='online-order-receipt tr-title '>
-                <td colSpan={3} className='tr-title'>Pemesan</td>
+              <tr className="online-order-receipt tr-title ">
+                <td colSpan={3} className="tr-title">
+                  Pemesan
+                </td>
                 <td>{customerInfo.name}</td>
               </tr>
               <tr>
-                <td colSpan={3} className='tr-title'>No WA/HP</td>
+                <td colSpan={3} className="tr-title">
+                  No WA/HP
+                </td>
                 <td>{customerInfo.phone}</td>
               </tr>
               <tr>
-                <td colSpan={4} className='text-left tr-title'>ALamat:</td>
+                <td colSpan={4} className="text-left tr-title">
+                  ALamat:
+                </td>
               </tr>
               <tr>
-                <td colSpan={4} className='text-left'>{customerInfo.address}</td>
+                <td colSpan={4} className="text-left">
+                  {customerInfo.address}
+                </td>
               </tr>
               <tr>
-                <td colSpan={4} className='text-left tr-title'>Catatan Tambahan:</td>
+                <td colSpan={4} className="text-left tr-title">
+                  Catatan Tambahan:
+                </td>
               </tr>
               <tr>
-                <td colSpan={4} className='text-left'>{customerInfo.notes}</td>
+                <td colSpan={4} className="text-left">
+                  {customerInfo.notes}
+                </td>
               </tr>
             </>
           )}
@@ -117,7 +168,7 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
             <td>Ver.1.0.0</td>
           </tr>
           <tr>
-            <td colSpan={4} className='info'>
+            <td colSpan={4} className="info">
               <p>- Basreng Ghosting Palu -</p>
               <p>- Berbagai cemilan pedas, mochi & sushi -</p>
               <p>- Jalan Contoh -</p>
@@ -127,7 +178,9 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
           </tr>
           <tr>
             <td colSpan={4}>
-              <p><i>App by Devon Yura Software House</i></p>
+              <p>
+                <i>App by Devon Yura Software House</i>
+              </p>
             </td>
           </tr>
         </tfoot>

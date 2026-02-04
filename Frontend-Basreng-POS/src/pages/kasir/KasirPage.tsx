@@ -12,13 +12,16 @@ import {
   IonSegmentContent,
   IonSegmentView,
   useIonViewWillEnter,
-  IonAccordion, IonAccordionGroup, IonItem,
-  IonAlert, IonSpinner
-} from '@ionic/react';
+  IonAccordion,
+  IonAccordionGroup,
+  IonItem,
+  IonAlert,
+  IonSpinner,
+} from "@ionic/react";
 
 // State, History etc
-import { useState, useEffect, useCallback } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useState, useEffect, useCallback } from "react";
+import { useHistory, useLocation } from "react-router-dom";
 
 // hooks
 import { useAuth } from "../../hooks/useAuthCookie";
@@ -32,7 +35,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../../redux/productSlice";
 import { fetchCategories } from "../../redux/categorySlice";
 import { fetchSubCategories } from "../../redux/subCategorySlice";
-import { RootState, AppDispatch } from "../../redux/store"
+import { RootState, AppDispatch } from "../../redux/store";
 
 // Loading Component
 import LoadingScreen from "../../components/LoadingScreen";
@@ -41,11 +44,9 @@ import LoadingScreen from "../../components/LoadingScreen";
 import "./KasirPage.css";
 
 const KasirPage: React.FC = () => {
-
   // ===== Setup Auth
   const { token, role } = useAuth();
   const history = useHistory();
-
 
   // Redirect if token expired/wrong
   useEffect(() => {
@@ -56,37 +57,44 @@ const KasirPage: React.FC = () => {
 
   // get Redux State
   const dispatch = useDispatch<AppDispatch>();
-  const { products, isLoading, error: productError } = useSelector((state: RootState) => state.products)
-  const { categories, error: categoryError } = useSelector((state: RootState) => state.categories)
-  const { subCategories, error: subCategoryError } = useSelector((state: RootState) => state.subCategories)
+  const {
+    products,
+    isLoading,
+    error: productError,
+  } = useSelector((state: RootState) => state.products);
+  const { categories, error: categoryError } = useSelector(
+    (state: RootState) => state.categories,
+  );
+  const { subCategories, error: subCategoryError } = useSelector(
+    (state: RootState) => state.subCategories,
+  );
 
   // Jalankan fetchProducts saat pertama kali komponen dimuat
   useIonViewWillEnter(() => {
-    dispatch(fetchProducts())
-    dispatch(fetchCategories())
-    dispatch(fetchSubCategories())
-  }, [dispatch])
+    dispatch(fetchProducts());
+    dispatch(fetchCategories());
+    dispatch(fetchSubCategories());
+  }, [dispatch]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   useEffect(() => {
     if (productError || categoryError || subCategoryError) {
-      setIsNoInternetOpen(true)
+      setIsNoInternetOpen(true);
     }
 
     if (categories.length > 0 && !selectedCategory) {
-      setSelectedCategory('1');
+      setSelectedCategory("1");
     }
-    console.log(isAppLoading)
+    console.log(isAppLoading);
+  }, [productError, categoryError, selectedCategory]);
 
-  }, [productError, categoryError, selectedCategory])
-
-  // No Internet Connection Alert 
-  const [isNoInternetOpen, setIsNoInternetOpen] = useState(false)
+  // No Internet Connection Alert
+  const [isNoInternetOpen, setIsNoInternetOpen] = useState(false);
 
   // cek kategori
   const filteredSubCategories = subCategories.filter(
-    (sub) => sub.id_categories === selectedCategory
+    (sub) => sub.id_categories === selectedCategory,
   );
 
   const hasSubCategories = filteredSubCategories.length > 0;
@@ -105,7 +113,7 @@ const KasirPage: React.FC = () => {
   }, [products, categories, subCategories]);
 
   if (isAppLoading) {
-    return <LoadingScreen />
+    return <LoadingScreen />;
   }
   // === Loading section
 
@@ -113,34 +121,33 @@ const KasirPage: React.FC = () => {
     <IonPage>
       <IonAlert
         isOpen={isNoInternetOpen}
-        header='Peringatan'
+        header="Peringatan"
         message="Tidak dapat terhubung ke server. Periksa koneksi Anda."
         buttons={[
           {
-            text: 'Coba Lagi',
-            role: 'confirm',
+            text: "Coba Lagi",
+            role: "confirm",
             handler: () => {
-              setIsNoInternetOpen(false)
-              dispatch(fetchProducts())
-            }
-          }
+              setIsNoInternetOpen(false);
+              dispatch(fetchProducts());
+            },
+          },
         ]}
         onDidDismiss={() => setIsNoInternetOpen(false)}
         backdropDismiss={false}
       ></IonAlert>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>
-            Kasir Panel
-          </IonTitle>
+          <IonTitle>Kasir Panel</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <h2>
-          Pilih Item yang akan dibeli:
-        </h2>
+        <h2>Pilih Item yang akan dibeli:</h2>
 
-        <IonSegment value={selectedCategory} onIonChange={(e) => setSelectedCategory(String(e.detail.value!))}>
+        <IonSegment
+          value={selectedCategory}
+          onIonChange={(e) => setSelectedCategory(String(e.detail.value!))}
+        >
           {categories.map((cat) => (
             <IonSegmentButton key={cat.id} value={cat.id}>
               <IonLabel>{cat.name}</IonLabel>
@@ -151,28 +158,28 @@ const KasirPage: React.FC = () => {
         {hasSubCategories ? (
           <div className="">
             <IonAccordionGroup>
-              {
-                subCategories
-                  .filter((sub) => sub.id_categories === selectedCategory)
-                  .map((sub) => (
-                    <IonAccordion key={sub.id} value={sub.id}>
-                      <IonItem slot='header'>
-                        <IonLabel>{sub.name}</IonLabel>
-                      </IonItem>
-                      <div className="ion-padding" slot='content'>
-                        {products
-                          .filter((product) => (
+              {subCategories
+                .filter((sub) => sub.id_categories === selectedCategory)
+                .map((sub) => (
+                  <IonAccordion key={sub.id} value={sub.id}>
+                    <IonItem slot="header">
+                      <IonLabel>{sub.name}</IonLabel>
+                    </IonItem>
+                    <div className="ion-padding" slot="content">
+                      {products
+                        .filter(
+                          (product) =>
                             product.category_id === selectedCategory &&
-                            product.name.toLowerCase().includes(sub.name.toLowerCase())
-                          ))
-                          .map((product) => (
-                            <ProductCard key={product.id} product={product} />
-                          ))
-                        }
-                      </div>
-                    </IonAccordion>
-                  ))
-              }
+                            product.name
+                              .toLowerCase()
+                              .includes(sub.name.toLowerCase()),
+                        )
+                        .map((product) => (
+                          <ProductCard key={product.id} product={product} />
+                        ))}
+                    </div>
+                  </IonAccordion>
+                ))}
             </IonAccordionGroup>
           </div>
         ) : (
@@ -189,7 +196,7 @@ const KasirPage: React.FC = () => {
         <DetailOrder />
       </IonContent>
     </IonPage>
-  )
+  );
 };
 
 export default KasirPage;
