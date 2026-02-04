@@ -8,6 +8,33 @@ export function rupiahFormat(value: string | number, withRp: boolean = true) {
   return (withRp) ? 'Rp.' + number.toLocaleString("id-ID") : '' + number.toLocaleString("id-ID");
 }
 
+export function parseWeightGrams(quantity?: string | number | null) {
+  if (quantity === null || quantity === undefined || quantity === '') {
+    return null;
+  }
+
+  if (typeof quantity === 'number') {
+    return Number.isFinite(quantity) ? quantity : null;
+  }
+
+  const sanitized = quantity.replace(/[^\d]/g, '');
+  if (!sanitized) {
+    return null;
+  }
+
+  const parsed = Number(sanitized);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+export function formatProductName(name: string, quantity?: string | number | null) {
+  const parsedQuantity = parseWeightGrams(quantity);
+  if (!parsedQuantity) {
+    return name;
+  }
+
+  return `${name} (${parsedQuantity}gr)`;
+}
+
 
 export function generateReceiptNumber(branchID: number, username: string | any): string {
   const now = new Date();

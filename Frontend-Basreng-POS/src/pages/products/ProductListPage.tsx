@@ -7,6 +7,7 @@ import {
 import { pencil, trashBin } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
 import { getProducts, Product, deleteProduct } from '../../hooks/restAPIProducts';
+import { formatProductName } from '../../hooks/formatting';
 import ProductForm, { AlertMessageProps } from './ProductForm';
 import './ProductListPage.css';
 
@@ -44,7 +45,13 @@ const ProductListPage: React.FC = () => {
   };
 
   const handleEdit = (product: Product) => {
-    const sanitizedProduct = { ...product, price: product.price.toString().split('.')[0] };
+    const sanitizedProduct = {
+      ...product,
+      price: product.price.toString().split('.')[0],
+      quantity: product.quantity !== undefined && product.quantity !== null
+        ? product.quantity.toString().split('.')[0]
+        : ''
+    };
     setEditingProduct(sanitizedProduct);
     setShowModal(true);
   };
@@ -98,7 +105,7 @@ const ProductListPage: React.FC = () => {
             {products.map(product => (
               <IonItem key={product.id}>
                 <IonLabel>
-                  <h2>{product.name}</h2>
+                  <h2>{formatProductName(product.name, product.quantity)}</h2>
                   <p>Harga: Rp {parseInt(product.price).toLocaleString()}</p>
                 </IonLabel>
                 <IonButton fill="clear" slot="end" onClick={() => handleEdit(product)}>

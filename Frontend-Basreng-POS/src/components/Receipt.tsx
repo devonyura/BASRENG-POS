@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { IonGrid, IonRow, IonCol, IonButton, IonIcon, IonItem, useIonViewWillEnter } from "@ionic/react";
 import { add, remove, trashBin } from "ionicons/icons";
-import { rupiahFormat, } from "../hooks/formatting";
+import { rupiahFormat, formatProductName } from "../hooks/formatting";
 import { getBranch } from '../hooks/restAPIRequest'
 import { useAuth } from "../hooks/useAuthCookie";
 import "./Receipt.css"
@@ -25,6 +25,7 @@ interface ReceiptProps {
     name: string;
     price: number;
     quantity: number;
+    weight_grams?: number;
   }[];
   receiptNoteNumber: string | null;
   // branchData: BranchData | null;
@@ -67,7 +68,7 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
         <tbody>
           {cartItems.map((item) => (
             <tr key={item.id}>
-              <td>{item.name}</td>
+              <td>{formatProductName(item.name, item.weight_grams)}</td>
               <td className="small-text">{item.quantity}x</td>
               <td>{rupiahFormat(item.price, false)}</td>
               <td>{rupiahFormat((item.price * item.quantity), false)}</td>

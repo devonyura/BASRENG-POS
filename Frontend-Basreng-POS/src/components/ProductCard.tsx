@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonGrid, IonRow, IonCol, IonButton, IonIcon } from "@ionic/react";
 import { add, remove, trashBin } from "ionicons/icons";
-import { rupiahFormat } from "../hooks/formatting";
+import { rupiahFormat, formatProductName, parseWeightGrams } from "../hooks/formatting";
 import { DataProduct } from '../hooks/restAPIRequest'
 
 // Redux
@@ -21,6 +21,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const itemInCart = cartItems.find(item => item.id === product.id)
   const quantity = itemInCart?.quantity ?? 0
   const subtotal = itemInCart?.subtotal ?? 0
+  const parsedWeightGrams = parseWeightGrams(product.quantity);
+  const weightGrams = parsedWeightGrams ?? 500;
 
   const ensureItemInCart = (qty: number) => {
     if (!itemInCart) {
@@ -29,7 +31,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         name: product.name,
         price: Number(product.price),
         quantity: qty,
-        subtotal: Number(product.price)
+        subtotal: Number(product.price),
+        weight_grams: weightGrams
       }))
     }
   }
@@ -57,7 +60,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <IonGrid>
 
         <IonCardHeader>
-          <IonCardTitle>{product.name}</IonCardTitle>
+          <IonCardTitle>{formatProductName(product.name, product.quantity)}</IonCardTitle>
         </IonCardHeader>
         <IonCardContent>
           <div className="amount price">

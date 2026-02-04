@@ -15,6 +15,7 @@ export interface DataProduct {
 	subcategory_id: string;
 	name: string;
 	price: string;
+	quantity: string | number;
 }
 
 export interface Categories {
@@ -37,6 +38,8 @@ export interface Auth {
 export interface TransactionPayload {
 	transaction: Transaction;
 	transaction_details: TransactionDetails[];
+	is_reseller?: boolean;
+	reseller_id?: number | null;
 }
 
 interface Transaction {
@@ -60,6 +63,7 @@ interface TransactionDetails {
 	quantity: number;
 	price: number;
 	subtotal: number;
+	weight_grams?: number;
 }
 
 export interface DataToken {
