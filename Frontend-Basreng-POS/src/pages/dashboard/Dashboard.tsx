@@ -24,13 +24,11 @@ import {
   IonItemOptions,
   IonButtons,
   IonMenuButton,
-  IonMenu,
   IonAlert,
-  IonMenuToggle,
   IonText,
   IonChip, IonSpinner, IonToast
 } from '@ionic/react';
-import { exitOutline, statsChart, pricetagsOutline, build, people, cashOutline, cubeOutline, personCircleOutline, refresh } from 'ionicons/icons';
+import { statsChart, cashOutline, refresh } from 'ionicons/icons';
 import {
   LineChart,
   Line,
@@ -56,6 +54,7 @@ import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./Dashboard.css";
 import { getTransactionSummary, getIncomeByBranch, getTopSellingProduct, getTransactionsReport, BranchIncome } from "../../hooks/restAPIDashboard";
 import { rupiahFormat } from '../../hooks/formatting';
+import DashboardMenu from '../../components/DashboardMenu';
 
 interface LocationState {
   isTokenExpired?: boolean;
@@ -157,49 +156,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <IonMenu contentId="main-content" >
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Admin Menu</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent className="ion-padding">
-          <IonMenuToggle>
-            <IonButton routerLink="/product-list" expand="block">
-              <IonIcon icon={pricetagsOutline} slot="start" />
-              Data Barang
-            </IonButton>
-          </IonMenuToggle>
-          <IonMenuToggle>
-            <IonButton routerLink="/categories" expand="block">
-              <IonIcon icon={pricetagsOutline} slot="start" />
-              Kategori
-            </IonButton>
-          </IonMenuToggle>
-          <IonMenuToggle>
-            <IonButton routerLink="/branch" expand="block">
-              <IonIcon icon={build} slot="start" />
-              Cabang
-            </IonButton>
-          </IonMenuToggle>
-          <IonMenuToggle>
-            <IonButton routerLink="/users" expand="block">
-              <IonIcon icon={people} slot="start" />
-              Management Akun
-            </IonButton>
-          </IonMenuToggle>
-          <IonMenuToggle>
-            <IonButton routerLink="/report" expand="block">
-              <IonIcon icon={people} slot="start" />
-              Laporan
-            </IonButton>
-          </IonMenuToggle>
-          <IonButton onClick={() => setLogoutShowAlert(true)} expand='block'>
-            <IonIcon icon={exitOutline} slot='start' />
-            Keluar
-          </IonButton>
-        </IonContent>
-      </IonMenu>
+      <DashboardMenu onLogout={() => setLogoutShowAlert(true)} />
       <IonPage id='main-content'>
         <IonHeader>
           <IonToolbar>

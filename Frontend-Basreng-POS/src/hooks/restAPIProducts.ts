@@ -7,6 +7,7 @@ export interface Product {
   subcategory_id: string | null;
   name: string;
   price: string;
+  quantity: string | number;
   created_at: string;
 }
 
@@ -15,6 +16,7 @@ export interface ProductPayload {
   subcategory_id: string | null;
   name: string;
   price: string;
+  quantity: string;
 }
 
 export interface UpdateProductPayload {
@@ -23,6 +25,7 @@ export interface UpdateProductPayload {
   subcategory_id: string | null | undefined;
   name: string;
   price: string;
+  quantity: string;
 }
 
 export const createProduct = async (productPayload: ProductPayload): Promise<ApiResponse> => {
@@ -196,4 +199,3 @@ export const getProducts = async (): Promise<Product | any> => {
     return error;
   }
 };
-

@@ -12,13 +12,13 @@ import {
   IonItemDivider, IonList, IonSelect, IonSelectOption,
   IonCheckbox, IonButtons,
   IonTextarea,
-  IonItemGroup, IonAlert, IonSpinner
+  IonItemGroup, IonAlert
 } from '@ionic/react';
-import { cart, cellular, flashOutline, receipt } from 'ionicons/icons';
+import { cart } from 'ionicons/icons';
 
 import { useState, useEffect, useRef } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
-import { loginRequest, getBranch, TransactionPayload, createTransaction } from '../../hooks/restAPIRequest';
+import { getBranch, TransactionPayload, createTransaction } from '../../hooks/restAPIRequest';
+import { getResellers, Reseller } from '../../hooks/restAPIResellers';
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
@@ -83,7 +83,48 @@ const DetailOrder: React.FC = () => {
   });
 
   const cartItems = useSelector((state: RootState) => state.cart.items)
-  const total: any = useSelector(selectorCartTotal)
+  const totalBeforeDiscount: any = useSelector(selectorCartTotal)
+
+  const [resellers, setResellers] = useState<Reseller[]>([]);
+  const [selectedResellerId, setSelectedResellerId] = useState<string>('');
+  const isReseller = selectedResellerId !== '';
+
+  const calculateResellerDiscount = (items: typeof cartItems, applyDiscount: boolean) => {
+    if (!applyDiscount) {
+      return { discount: 0, totalGrams: 0 };
+    }
+
+    const variantGrams: Record<string, number> = {};
+    let totalGrams = 0;
+
+    items.forEach((item) => {
+      const weightGrams = Number.isNaN(Number(item.weight_grams)) ? 500 : Number(item.weight_grams);
+      const grams = item.quantity * weightGrams;
+      variantGrams[item.id] = (variantGrams[item.id] ?? 0) + grams;
+      totalGrams += grams;
+    });
+
+    if (totalGrams < 3000 || totalGrams % 500 !== 0) {
+      return { discount: 0, totalGrams };
+    }
+
+    let discount = 0;
+    let mixGrams = 0;
+
+    Object.values(variantGrams).forEach((grams) => {
+      const fullKg = Math.floor(grams / 1000);
+      discount += fullKg * 5000;
+      mixGrams += grams % 1000;
+    });
+
+    const mixedKg = Math.floor(mixGrams / 1000);
+    discount += mixedKg * 3000;
+
+    return { discount, totalGrams };
+  };
+
+  const { discount } = calculateResellerDiscount(cartItems, isReseller);
+  const total = Math.max(0, totalBeforeDiscount - discount);
 
   let change = calculateChange(Number(cashGiven), total)
 
@@ -93,14 +134,12 @@ const DetailOrder: React.FC = () => {
   const buttonColorCash = ["success", "warning", "secondary", "danger"]
 
   useEffect(() => {
-
     if (isCash) {
       setCashGiven(total)
     } else {
       setCashGiven(null)
     }
-
-  }, [isCash])
+  }, [isCash, total])
 
   // Menganggap cash 0 jika uang kurang dari total bayar
   useEffect(() => {
@@ -111,7 +150,7 @@ const DetailOrder: React.FC = () => {
       }
       // const change = (cashGiven - total) < 0 ? null 
     }
-  }, [cashGiven])
+  }, [cashGiven, total])
 
   const [branchDataState, setBranchDataState] = useState<BranchData | null>(null)
 
@@ -130,6 +169,19 @@ const DetailOrder: React.FC = () => {
 
     fetchBranch()
   }, [])
+
+  useEffect(() => {
+    const fetchResellers = async () => {
+      try {
+        const data = await getResellers();
+        setResellers(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Gagal load reseller:", err);
+      }
+    };
+
+    fetchResellers();
+  }, []);
 
 
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -182,8 +234,11 @@ const DetailOrder: React.FC = () => {
         product_id: Number(item.id), // pastikan item.id adalah ID produk asli dari DB
         quantity: item.quantity,
         price: item.price,
-        subtotal: item.subtotal
-      }))
+        subtotal: item.subtotal,
+        weight_grams: item.weight_grams
+      })),
+      is_reseller: isReseller,
+      reseller_id: selectedResellerId ? Number(selectedResellerId) : null
     }
 
     console.log("Data Transaksi Siap Dikirim:", transactionData);
@@ -232,6 +287,7 @@ const DetailOrder: React.FC = () => {
     setPaymentMethod("cash");
     setIsCash(false);
     setCashGiven(null);
+    setSelectedResellerId('');
     setCustomerInfo({
       name: "",
       phone: "",
@@ -302,6 +358,32 @@ const DetailOrder: React.FC = () => {
               <IonItem>
                 <IonInput className="input-digit" label="Total Belanja:" value={rupiahFormat(total)} disabled={true}></IonInput>
               </IonItem>
+              <IonItem>
+                <IonSelect
+                  name='reseller'
+                  label="Reseller:"
+                  value={selectedResellerId}
+                  placeholder="Pilih Reseller"
+                  onIonChange={(e) => setSelectedResellerId(String(e.detail.value ?? ''))}
+                >
+                  <IonSelectOption value="">Batal pilih reseller</IonSelectOption>
+                  {resellers.map((reseller) => (
+                    <IonSelectOption key={reseller.id} value={reseller.id}>
+                      {reseller.name}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+              {discount > 0 && (
+                <IonItem>
+                  <IonInput
+                    className="input-digit"
+                    label="Diskon Reseller:"
+                    value={`-${rupiahFormat(discount)}`}
+                    disabled
+                  ></IonInput>
+                </IonItem>
+              )}
               <IonItem>
                 <IonGrid>
                   <IonRow>
