@@ -8,6 +8,16 @@ export function rupiahFormat(value: string | number, withRp: boolean = true) {
   return (withRp) ? 'Rp.' + number.toLocaleString("id-ID") : '' + number.toLocaleString("id-ID");
 }
 
+export function formatProductName(name: string, quantity?: string | number | null) {
+  if (quantity === null || quantity === undefined || quantity === '') {
+    return name;
+  }
+
+  const parsedQuantity = typeof quantity === 'string' ? Number(quantity) : quantity;
+  const safeQuantity = Number.isNaN(parsedQuantity) ? quantity : parsedQuantity;
+  return `${name} (${safeQuantity}gr)`;
+}
+
 
 export function generateReceiptNumber(branchID: number, username: string | any): string {
   const now = new Date();
