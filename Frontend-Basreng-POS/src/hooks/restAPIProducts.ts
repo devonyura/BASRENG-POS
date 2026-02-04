@@ -7,7 +7,7 @@ export interface Product {
   subcategory_id: string | null;
   name: string;
   price: string;
-  quantity: string | number;
+  weight_grams: string | number;
   created_at: string;
 }
 
