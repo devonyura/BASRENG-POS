@@ -96,15 +96,19 @@ const DetailOrder: React.FC = () => {
 
     const variantGrams: Record<string, number> = {};
     let totalGrams = 0;
+    let isValidResellerWeight = true;
 
     items.forEach((item) => {
       const weightGrams = parseWeightGrams(item.weight_grams) ?? 500;
+      if (weightGrams !== 500 && weightGrams !== 1000) {
+        isValidResellerWeight = false;
+      }
       const grams = item.quantity * weightGrams;
       variantGrams[item.id] = (variantGrams[item.id] ?? 0) + grams;
       totalGrams += grams;
     });
 
-    if (totalGrams < 3000 || totalGrams % 500 !== 0) {
+    if (!isValidResellerWeight || totalGrams < 3000 || totalGrams % 500 !== 0) {
       return { discount: 0, totalGrams };
     }
 
