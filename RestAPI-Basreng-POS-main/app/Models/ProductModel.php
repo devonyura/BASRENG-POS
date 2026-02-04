@@ -13,6 +13,7 @@ class ProductModel extends Model
     'subcategory_id',
     'name',
     'price',
+    'weight_grams',
   ];
   protected $useTimestamps = true;
   protected $dateFormat    = 'datetime';

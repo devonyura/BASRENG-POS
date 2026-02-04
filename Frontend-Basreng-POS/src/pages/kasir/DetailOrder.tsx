@@ -8,63 +8,81 @@ import {
   IonToolbar,
   IonIcon,
   IonLabel,
-  IonCol, IonGrid, IonRow, IonFab, IonFabButton, IonModal, IonBadge,
-  IonItemDivider, IonList, IonSelect, IonSelectOption,
-  IonCheckbox, IonButtons,
+  IonCol,
+  IonGrid,
+  IonRow,
+  IonFab,
+  IonFabButton,
+  IonModal,
+  IonBadge,
+  IonItemDivider,
+  IonList,
+  IonSelect,
+  IonSelectOption,
+  IonCheckbox,
+  IonButtons,
   IonTextarea,
-  IonItemGroup, IonAlert
-} from '@ionic/react';
-import { cart } from 'ionicons/icons';
+  IonItemGroup,
+  IonAlert,
+} from "@ionic/react";
+import { cart } from "ionicons/icons";
 
-import { useState, useEffect, useRef } from 'react';
-import { getBranch, TransactionPayload, createTransaction } from '../../hooks/restAPIRequest';
-import { getResellers, Reseller } from '../../hooks/restAPIResellers';
+import { useState, useEffect, useRef } from "react";
+import {
+  getBranch,
+  TransactionPayload,
+  createTransaction,
+} from "../../hooks/restAPIRequest";
+import { getResellers, Reseller } from "../../hooks/restAPIResellers";
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
-import { OverlayEventDetail } from '@ionic/core/components';
-import qrcode from "../../../public/img/qr/images.png"
+import { OverlayEventDetail } from "@ionic/core/components";
+import qrcode from "../../../public/img/qr/images.png";
 import Receipt, { BranchData } from "../../components/Receipt";
 
 // Redux
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from '../../redux/store';
-import ProductCartItem from '../../components/ProductCartItem';
+import { RootState } from "../../redux/store";
+import ProductCartItem from "../../components/ProductCartItem";
 import { selectorCartTotal } from "../../redux/cartSelectors";
 import { clearCart } from "../../redux/cartSlice";
 
-import { rupiahFormat, calculateChange, generateReceiptNumber } from '../../hooks/formatting';
-import React from 'react';
+import {
+  rupiahFormat,
+  calculateChange,
+  generateReceiptNumber,
+} from "../../hooks/formatting";
+import React from "react";
 
 // save struk
-import html2canvas from 'html2canvas';
+import html2canvas from "html2canvas";
 
 const DetailOrder: React.FC = () => {
-
   // untuk reset Cart
   const dispatch = useDispatch();
 
   // setup Alert
   const [alert, setAlert] = useState<AlertState>({
     showAlert: false,
-    header: '',
-    alertMesage: '',
+    header: "",
+    alertMesage: "",
     hideButton: false,
   });
 
   const checkForm = (name: string, value: any) => {
-    if (value === null || !value || value === 0 || value === '0') {
+    if (value === null || !value || value === 0 || value === "0") {
       setAlert({
         showAlert: true,
         header: "Peringatan",
-        alertMesage: 'Isian ' + name + " tidak boleh kosong!"
+        alertMesage: "Isian " + name + " tidak boleh kosong!",
       });
 
-      alert.showAlert = false
-      return false
+      alert.showAlert = false;
+      return false;
     }
-    return true
-  }
+    return true;
+  };
 
   const modal = useRef<HTMLIonModalElement>(null);
   const paymentModal = useRef<HTMLIonModalElement>(null);
@@ -79,17 +97,20 @@ const DetailOrder: React.FC = () => {
     name: "",
     phone: "",
     address: "",
-    notes: ""
+    notes: "",
   });
 
-  const cartItems = useSelector((state: RootState) => state.cart.items)
-  const totalBeforeDiscount: any = useSelector(selectorCartTotal)
+  const cartItems = useSelector((state: RootState) => state.cart.items);
+  const totalBeforeDiscount: any = useSelector(selectorCartTotal);
 
   const [resellers, setResellers] = useState<Reseller[]>([]);
-  const [selectedResellerId, setSelectedResellerId] = useState<string>('');
-  const isReseller = selectedResellerId !== '';
+  const [selectedResellerId, setSelectedResellerId] = useState<string>("");
+  const isReseller = selectedResellerId !== "";
 
-  const calculateResellerDiscount = (items: typeof cartItems, applyDiscount: boolean) => {
+  const calculateResellerDiscount = (
+    items: typeof cartItems,
+    applyDiscount: boolean,
+  ) => {
     if (!applyDiscount) {
       return { discount: 0, totalGrams: 0 };
     }
@@ -97,14 +118,25 @@ const DetailOrder: React.FC = () => {
     const variantGrams: Record<string, number> = {};
     let totalGrams = 0;
 
-    items.forEach((item) => {
-      const weightGrams = Number.isNaN(Number(item.weight_grams)) ? 500 : Number(item.weight_grams);
-      const grams = item.quantity * weightGrams;
+    for (const item of items) {
+      const weight = Number(item.weight_grams);
+
+      // ❗ berat produk HARUS valid & kelipatan 500
+      if (!Number.isFinite(weight) || weight <= 0 || weight % 500 !== 0) {
+        console.warn(
+          `Produk ID ${item.id} berat tidak valid:`,
+          item.weight_grams,
+        );
+        return { discount: 0, totalGrams: 0 };
+      }
+
+      const grams = item.quantity * weight;
       variantGrams[item.id] = (variantGrams[item.id] ?? 0) + grams;
       totalGrams += grams;
-    });
+    }
 
-    if (totalGrams < 3000 || totalGrams % 500 !== 0) {
+    // Minimal 3kg
+    if (totalGrams < 3000) {
       return { discount: 0, totalGrams };
     }
 
@@ -126,49 +158,52 @@ const DetailOrder: React.FC = () => {
   const { discount } = calculateResellerDiscount(cartItems, isReseller);
   const total = Math.max(0, totalBeforeDiscount - discount);
 
-  let change = calculateChange(Number(cashGiven), total)
+  let change = calculateChange(Number(cashGiven), total);
 
-  const { username, branchID, idUser } = useAuth()
-  const [receiptNoteNumber, setReceiptNoteNumber] = useState<null | string>(null)
+  const { username, branchID, idUser } = useAuth();
+  const [receiptNoteNumber, setReceiptNoteNumber] = useState<null | string>(
+    null,
+  );
   // const receiptNoteNumber = generateReceiptNumber(Number(branchID), username)
-  const buttonColorCash = ["success", "warning", "secondary", "danger"]
+  const buttonColorCash = ["success", "warning", "secondary", "danger"];
 
   useEffect(() => {
     if (isCash) {
-      setCashGiven(total)
+      setCashGiven(total);
     } else {
-      setCashGiven(null)
+      setCashGiven(null);
     }
-  }, [isCash, total])
+  }, [isCash, total]);
 
   // Menganggap cash 0 jika uang kurang dari total bayar
   useEffect(() => {
     if (cashGiven) {
-      console.info("Cash:", cashGiven - total)
+      console.info("Cash:", cashGiven - total);
       if (cashGiven - total < 0) {
-        setCashGiven(null)
+        setCashGiven(null);
       }
-      // const change = (cashGiven - total) < 0 ? null 
+      // const change = (cashGiven - total) < 0 ? null
     }
-  }, [cashGiven, total])
+  }, [cashGiven, total]);
 
-  const [branchDataState, setBranchDataState] = useState<BranchData | null>(null)
+  const [branchDataState, setBranchDataState] = useState<BranchData | null>(
+    null,
+  );
 
   // Load data cabang
   useEffect(() => {
-
     const fetchBranch = async () => {
       try {
         const data = await getBranch(Number(branchID));
         setBranchDataState(data);
-        console.log(branchDataState)
+        console.log(branchDataState);
       } catch (err) {
         console.error("Gagal load branch info:", err);
       }
-    }
+    };
 
-    fetchBranch()
-  }, [])
+    fetchBranch();
+  }, []);
 
   useEffect(() => {
     const fetchResellers = async () => {
@@ -183,16 +218,15 @@ const DetailOrder: React.FC = () => {
     fetchResellers();
   }, []);
 
-
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false)
-  const [shareFile, setShareFile] = useState<File | null>(null)
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [shareFile, setShareFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertBeforeSubmit, setAlertBeforeSubmit] = useState(false);
   const [isResetButton, setIsResetButton] = useState(false);
 
   const handleSubmitTransaction = async () => {
-    setReceiptNoteNumber(generateReceiptNumber(Number(branchID), username))
+    setReceiptNoteNumber(generateReceiptNumber(Number(branchID), username));
 
     if (!branchDataState) {
       console.warn("Branch belum dimuat.");
@@ -201,17 +235,18 @@ const DetailOrder: React.FC = () => {
     }
 
     if (isOnlineOrder) {
-      if (!checkForm("Nama Pemesan", customerInfo.name)) return
-      if (!checkForm("Nomor HP Pemesan", customerInfo.phone)) return
-      if (!checkForm("Alamat Pemesan", customerInfo.address)) return
+      if (!checkForm("Nama Pemesan", customerInfo.name)) return;
+      if (!checkForm("Nomor HP Pemesan", customerInfo.phone)) return;
+      if (!checkForm("Alamat Pemesan", customerInfo.address)) return;
     }
 
-
-
     const dateTimeNow = new Date();
-    const formattedDateTime = dateTimeNow.toISOString().replace("T", " ").substring(0, 19); // format: yyyy-MM-dd HH:mm:ss
+    const formattedDateTime = dateTimeNow
+      .toISOString()
+      .replace("T", " ")
+      .substring(0, 19); // format: yyyy-MM-dd HH:mm:ss
 
-    const cash_amounts = isCash ? total : cashGiven ?? 0;
+    const cash_amounts = isCash ? total : (cashGiven ?? 0);
 
     const transactionData: TransactionPayload = {
       transaction: {
@@ -226,27 +261,26 @@ const DetailOrder: React.FC = () => {
         is_online_order: isOnlineOrder === true ? 1 : 0,
         customer_name: customerInfo.name === "" ? null : customerInfo.name,
         customer_phone: customerInfo.phone === "" ? null : customerInfo.phone,
-        customer_address: customerInfo.address === "" ? null : customerInfo.name,
-        notes: customerInfo.notes === "" ? null : customerInfo.notes
+        customer_address:
+          customerInfo.address === "" ? null : customerInfo.name,
+        notes: customerInfo.notes === "" ? null : customerInfo.notes,
       },
 
-      transaction_details: cartItems.map(item => ({
+      transaction_details: cartItems.map((item) => ({
         product_id: Number(item.id), // pastikan item.id adalah ID produk asli dari DB
         quantity: item.quantity,
         price: item.price,
         subtotal: item.subtotal,
-        weight_grams: item.weight_grams
+        weight_grams: item.weight_grams,
       })),
       is_reseller: isReseller,
-      reseller_id: selectedResellerId ? Number(selectedResellerId) : null
-    }
+      reseller_id: selectedResellerId ? Number(selectedResellerId) : null,
+    };
 
     console.log("Data Transaksi Siap Dikirim:", transactionData);
 
-
     try {
-
-      const result = await createTransaction(transactionData)
+      const result = await createTransaction(transactionData);
 
       if (result.success) {
         // resetForm();
@@ -257,7 +291,7 @@ const DetailOrder: React.FC = () => {
         // });
 
         // history.push('/student-list')
-        console.log("Transaksi Berhasil Dicatat!", result)
+        console.log("Transaksi Berhasil Dicatat!", result);
         setShowSuccessAlert(true);
       } else {
         // setAlert({
@@ -265,29 +299,27 @@ const DetailOrder: React.FC = () => {
         //   header: "Gagal!",
         //   alertMesage: result.error
         // });
-        console.log("Transaksi Gagal Dicatat: ", result)
+        console.log("Transaksi Gagal Dicatat: ", result);
       }
-
-
     } catch (error: any) {
-      console.log("Transaksi Gagal Dicatat: ", error)
+      console.log("Transaksi Gagal Dicatat: ", error);
       // setAlert({
       //   showAlert: true,
       //   header: "Kasalahan Server!",
       //   alertMesage: error.error
       // });
     }
-  }
+  };
 
   // ======================================================================= Reset Input
   const resetInput = () => {
-    setShowSuccessAlert(false)
+    setShowSuccessAlert(false);
 
     // reset semua state setelah alert ditutup
     setPaymentMethod("cash");
     setIsCash(false);
     setCashGiven(null);
-    setSelectedResellerId('');
+    setSelectedResellerId("");
     setCustomerInfo({
       name: "",
       phone: "",
@@ -297,27 +329,27 @@ const DetailOrder: React.FC = () => {
     // setShareFile(null);
     setIsSubmitting(false);
 
-    dispatch(clearCart())
+    dispatch(clearCart());
 
     // tutup modal detail order
     modal.current?.dismiss();
-  }
+  };
   // ======================================================================= Reset Input End
 
-
-  // === Online Order copy paste 
+  // === Online Order copy paste
   const copyCustomerInfoToClipboard = () => {
     const { name, phone, address, notes } = customerInfo;
 
-    const infoText =
-      ` Nama: ${name}\nNomor HP: ${phone}\nAlamat: ${address}\nCatatan: ${notes || '-'}`
+    const infoText = ` Nama: ${name}\nNomor HP: ${phone}\nAlamat: ${address}\nCatatan: ${notes || "-"}`;
 
-    navigator.clipboard.writeText(infoText)
+    navigator.clipboard
+      .writeText(infoText)
       .then(() => {
         setAlert({
           showAlert: true,
           header: "Tersalin!",
-          alertMesage: "Info Pemesan telah disalin! Silakan buka Maxim dan tempel pada Perincian pesanan."
+          alertMesage:
+            "Info Pemesan telah disalin! Silakan buka Maxim dan tempel pada Perincian pesanan.",
         });
       })
       .catch((err) => {
@@ -329,10 +361,15 @@ const DetailOrder: React.FC = () => {
   return (
     <>
       <IonFab vertical="bottom" horizontal="end" slot="fixed" color="danger">
-        {(cartItems.length !== 0) && (
+        {cartItems.length !== 0 && (
           <IonBadge color="danger">{cartItems.length}</IonBadge>
         )}
-        <IonFabButton id='open-detail-order' onClick={() => (cartItems.length === 0) ? modal.current?.dismiss() : ""}>
+        <IonFabButton
+          id="open-detail-order"
+          onClick={() =>
+            cartItems.length === 0 ? modal.current?.dismiss() : ""
+          }
+        >
           <IonIcon icon={cart} />
         </IonFabButton>
       </IonFab>
@@ -340,10 +377,14 @@ const DetailOrder: React.FC = () => {
         <IonHeader>
           <IonToolbar>
             <IonButtons slot="start">
-              <IonButton onClick={() => {
-                setAlertBeforeSubmit(true)
-                setIsResetButton(true)
-              }}>Kembali</IonButton>
+              <IonButton
+                onClick={() => {
+                  setAlertBeforeSubmit(true);
+                  setIsResetButton(true);
+                }}
+              >
+                Kembali
+              </IonButton>
             </IonButtons>
             <IonTitle>Detail Order</IonTitle>
           </IonToolbar>
@@ -356,17 +397,26 @@ const DetailOrder: React.FC = () => {
           <div className="input-method">
             <IonList>
               <IonItem>
-                <IonInput className="input-digit" label="Total Belanja:" value={rupiahFormat(total)} disabled={true}></IonInput>
+                <IonInput
+                  className="input-digit"
+                  label="Total Belanja:"
+                  value={rupiahFormat(total)}
+                  disabled={true}
+                ></IonInput>
               </IonItem>
               <IonItem>
                 <IonSelect
-                  name='reseller'
+                  name="reseller"
                   label="Reseller:"
                   value={selectedResellerId}
                   placeholder="Pilih Reseller"
-                  onIonChange={(e) => setSelectedResellerId(String(e.detail.value ?? ''))}
+                  onIonChange={(e) =>
+                    setSelectedResellerId(String(e.detail.value ?? ""))
+                  }
                 >
-                  <IonSelectOption value="">Batal pilih reseller</IonSelectOption>
+                  <IonSelectOption value="">
+                    Batal pilih reseller
+                  </IonSelectOption>
                   {resellers.map((reseller) => (
                     <IonSelectOption key={reseller.id} value={reseller.id}>
                       {reseller.name}
@@ -387,75 +437,153 @@ const DetailOrder: React.FC = () => {
               <IonItem>
                 <IonGrid>
                   <IonRow>
-                    <IonCol size='9'>
+                    <IonCol size="9">
                       <IonSelect
-                        name='payment_method'
+                        name="payment_method"
                         label="Pembayaran:"
                         value={paymentMethod}
                         onIonChange={(e) => setPaymentMethod(e.detail.value)}
                       >
                         <IonSelectOption value="cash">Cash</IonSelectOption>
                         <IonSelectOption value="qris">QRIS</IonSelectOption>
-                        <IonSelectOption value="transfer_bank">TRANSFER BANK</IonSelectOption>
+                        <IonSelectOption value="transfer_bank">
+                          TRANSFER BANK
+                        </IonSelectOption>
                       </IonSelect>
                     </IonCol>
                     <IonCol
-                      className={`flex-center qr-method ${paymentMethod === "qris" || paymentMethod === "transfer_bank"
-                        ? ""
-                        : "hidden-button"
-                        }`}
+                      className={`flex-center qr-method ${
+                        paymentMethod === "qris" ||
+                        paymentMethod === "transfer_bank"
+                          ? ""
+                          : "hidden-button"
+                      }`}
                     >
-                      <IonButton id='open-payment-method' expand='full'>
+                      <IonButton id="open-payment-method" expand="full">
                         {paymentMethod === "qris" ? "QR" : "TF"}
                       </IonButton>
                     </IonCol>
-
                   </IonRow>
                 </IonGrid>
               </IonItem>
               <IonItem>
-                <IonCheckbox checked={isCash} onIonChange={(e) => setIsCash(e.detail.checked)}>Uang Pas</IonCheckbox>
+                <IonCheckbox
+                  checked={isCash}
+                  onIonChange={(e) => setIsCash(e.detail.checked)}
+                >
+                  Uang Pas
+                </IonCheckbox>
               </IonItem>
-              <div className={`cash ${isCash ? "hidden-button" : ""}`} >
+              <div className={`cash ${isCash ? "hidden-button" : ""}`}>
                 <IonItem>
-                  <IonInput type="number" label="Masukkan Cash:" value={cashGiven ?? ''} onIonChange={e => setCashGiven(parseInt(e.detail.value!, 10))}></IonInput>
+                  <IonInput
+                    type="number"
+                    label="Masukkan Cash:"
+                    value={cashGiven ?? ""}
+                    onIonChange={(e) =>
+                      setCashGiven(parseInt(e.detail.value!, 10))
+                    }
+                  ></IonInput>
                 </IonItem>
                 <IonItem>
                   {[20000, 30000, 50000, 100000].map((nominal, key) => (
-                    <IonButton key={nominal} color={buttonColorCash[key]} size='small' onClick={() => setCashGiven(nominal)}>{rupiahFormat(nominal, false)}</IonButton>
+                    <IonButton
+                      key={nominal}
+                      color={buttonColorCash[key]}
+                      size="small"
+                      onClick={() => setCashGiven(nominal)}
+                    >
+                      {rupiahFormat(nominal, false)}
+                    </IonButton>
                   ))}
                 </IonItem>
                 <IonItem>
-                  <IonInput className="input-digit" label="Kembalian:" value={rupiahFormat(change)} disabled></IonInput>
+                  <IonInput
+                    className="input-digit"
+                    label="Kembalian:"
+                    value={rupiahFormat(change)}
+                    disabled
+                  ></IonInput>
                 </IonItem>
               </div>
               <IonItem>
                 <IonCheckbox
-                  id='online-check'
+                  id="online-check"
                   checked={isOnlineOrder}
                   onIonChange={(e) => setIsOnlineOrder(e.detail.checked)}
                 >
                   Pesanan Online?
                 </IonCheckbox>
               </IonItem>
-              <IonItemGroup className={!isOnlineOrder ? "hidden-button" : ''}>
+              <IonItemGroup className={!isOnlineOrder ? "hidden-button" : ""}>
                 <IonItemDivider>
                   <IonLabel>Info Pemesan</IonLabel>
                 </IonItemDivider>
                 <IonItem>
-                  <IonInput name='customer_name' type='text' placeholder='isi Nama Pemesan' value={customerInfo.name} onIonChange={(e) => setCustomerInfo({ ...customerInfo, name: e.detail.value! })}></IonInput>
+                  <IonInput
+                    name="customer_name"
+                    type="text"
+                    placeholder="isi Nama Pemesan"
+                    value={customerInfo.name}
+                    onIonChange={(e) =>
+                      setCustomerInfo({
+                        ...customerInfo,
+                        name: e.detail.value!,
+                      })
+                    }
+                  ></IonInput>
                 </IonItem>
                 <IonItem>
-                  <IonInput name='customer_phone' type='text' placeholder='Nomor WA/HP Pemesan' value={customerInfo.phone} onIonChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.detail.value! })}></IonInput>
+                  <IonInput
+                    name="customer_phone"
+                    type="text"
+                    placeholder="Nomor WA/HP Pemesan"
+                    value={customerInfo.phone}
+                    onIonChange={(e) =>
+                      setCustomerInfo({
+                        ...customerInfo,
+                        phone: e.detail.value!,
+                      })
+                    }
+                  ></IonInput>
                 </IonItem>
                 <IonItem>
-                  <IonTextarea name='customer_address' labelPlacement="stacked" placeholder="Alamat Pemasan" value={customerInfo.address} onIonChange={(e) => setCustomerInfo({ ...customerInfo, address: e.detail.value! })}></IonTextarea>
+                  <IonTextarea
+                    name="customer_address"
+                    labelPlacement="stacked"
+                    placeholder="Alamat Pemasan"
+                    value={customerInfo.address}
+                    onIonChange={(e) =>
+                      setCustomerInfo({
+                        ...customerInfo,
+                        address: e.detail.value!,
+                      })
+                    }
+                  ></IonTextarea>
                 </IonItem>
                 <IonItem>
-                  <IonTextarea name='notes' placeholder='Catatan: contoh: Pesanan dibayar 50K' autoGrow={true} value={customerInfo.notes} onIonChange={(e) => setCustomerInfo({ ...customerInfo, notes: e.detail.value! })}></IonTextarea>
+                  <IonTextarea
+                    name="notes"
+                    placeholder="Catatan: contoh: Pesanan dibayar 50K"
+                    autoGrow={true}
+                    value={customerInfo.notes}
+                    onIonChange={(e) =>
+                      setCustomerInfo({
+                        ...customerInfo,
+                        notes: e.detail.value!,
+                      })
+                    }
+                  ></IonTextarea>
                 </IonItem>
-                <IonItem className='button-wrapper'>
-                  <IonButton expand='block' size='small' color={'dark'} onClick={copyCustomerInfoToClipboard}>Salin Info Pemesan (Untuk Order Maxim)</IonButton>
+                <IonItem className="button-wrapper">
+                  <IonButton
+                    expand="block"
+                    size="small"
+                    color={"dark"}
+                    onClick={copyCustomerInfoToClipboard}
+                  >
+                    Salin Info Pemesan (Untuk Order Maxim)
+                  </IonButton>
                 </IonItem>
               </IonItemGroup>
             </IonList>
@@ -468,15 +596,19 @@ const DetailOrder: React.FC = () => {
             isOnlineOrders={isOnlineOrder}
             customerInfo={customerInfo}
             cartItems={cartItems}
-            receiptNoteNumber={receiptNoteNumber || '0'}
+            receiptNoteNumber={receiptNoteNumber || "0"}
+            isReseller={isReseller}
+            discount={discount}
+          ></Receipt>
+          <IonButton
+            expand="block"
+            onClick={() => setAlertBeforeSubmit(true)}
+            disabled={isSubmitting || cashGiven === null || cashGiven === 0}
           >
-
-          </Receipt>
-          <IonButton expand="block" onClick={() => setAlertBeforeSubmit(true)} disabled={isSubmitting || cashGiven === null || cashGiven === 0}>
             Selesaikan Transaksi
           </IonButton>
           {/* <IonButton expand="block" className='btn-checkout' color="success" onClick={handleSubmitTransaction}>Selesaikan Transaksi</IonButton> */}
-          <div className='space'></div>
+          <div className="space"></div>
         </IonContent>
         <IonModal
           ref={paymentModal}
@@ -484,21 +616,30 @@ const DetailOrder: React.FC = () => {
           initialBreakpoint={0.75}
           breakpoints={[0.75, 1]}
         >
-          <div className="payment-method" onClick={() => paymentModal.current?.setCurrentBreakpoint(1)} >
+          <div
+            className="payment-method"
+            onClick={() => paymentModal.current?.setCurrentBreakpoint(1)}
+          >
             {paymentMethod === "transfer_bank" && (
-              <div className='transfer-bank'>
+              <div className="transfer-bank">
                 <p>Transfer ke No Rek Dibawah ini:</p>
                 <h2>BRI: 1209302933012930</h2>
                 <h3>NAMA: SYAKIRAH DELTA SALSABILA</h3>
-                <h4><b>TOTAL BAYAR: {rupiahFormat(total)}</b></h4>
+                <h4>
+                  <b>TOTAL BAYAR: {rupiahFormat(total)}</b>
+                </h4>
               </div>
             )}
 
             {paymentMethod === "qris" && (
-              <div className='QRIS'>
+              <div className="QRIS">
                 <p>Scan QR dibawah ini untuk membayar:</p>
-                <h2><img src={qrcode} alt="" /></h2>
-                <h4><b>TOTAL BAYAR: {rupiahFormat(total)}</b></h4>
+                <h2>
+                  <img src={qrcode} alt="" />
+                </h2>
+                <h4>
+                  <b>TOTAL BAYAR: {rupiahFormat(total)}</b>
+                </h4>
                 <h3>BASRENG GHOSTING PLW</h3>
               </div>
             )}
@@ -509,58 +650,60 @@ const DetailOrder: React.FC = () => {
         isOpen={alert.showAlert}
         header={alert.header}
         message={alert.alertMesage}
-        onDidDismiss={() => setAlert(prevState => ({ ...prevState, showAlert: false }))}
+        onDidDismiss={() =>
+          setAlert((prevState) => ({ ...prevState, showAlert: false }))
+        }
         hideButton={alert.hideButton}
       />
       <IonAlert
         isOpen={showSuccessAlert}
-        onDidDismiss={() => { }}
+        onDidDismiss={() => {}}
         header="Transaksi Berhasil!"
-        message={
-          "Transaksi berhasil dicatat."
-        }
+        message={"Transaksi berhasil dicatat."}
         buttons={[
           {
             text: "Kembali",
             role: "cancel",
             handler: () => {
-              resetInput()
-            }
+              resetInput();
+            },
           },
         ]}
       />
       <IonAlert
         isOpen={alertBeforeSubmit}
-        onDidDismiss={() => { }}
+        onDidDismiss={() => {}}
         header="Yakin?"
         message={
-          (isResetButton) ? "Jika kembali, isi keranjang dihapus" : "Yakin Item Sudah Sesuai?"
+          isResetButton
+            ? "Jika kembali, isi keranjang dihapus"
+            : "Yakin Item Sudah Sesuai?"
         }
         buttons={[
           {
             text: "Tidak",
             role: "cancel",
             handler: () => {
-              setAlertBeforeSubmit(false)
-              setIsResetButton(false)
-            }
+              setAlertBeforeSubmit(false);
+              setIsResetButton(false);
+            },
           },
           {
             text: "Ya",
             handler: () => {
               if (isResetButton) {
-                resetInput()
-                setIsResetButton(false)
+                resetInput();
+                setIsResetButton(false);
               } else {
-                handleSubmitTransaction()
+                handleSubmitTransaction();
               }
-              setAlertBeforeSubmit(false)
-            }
+              setAlertBeforeSubmit(false);
+            },
           },
         ]}
       />
     </>
-  )
+  );
 };
 
 export default DetailOrder;

@@ -15,7 +15,7 @@ export interface DataProduct {
 	subcategory_id: string;
 	name: string;
 	price: string;
-	quantity: string | number;
+	weight_grams: string | number;
 }
 
 export interface Categories {
