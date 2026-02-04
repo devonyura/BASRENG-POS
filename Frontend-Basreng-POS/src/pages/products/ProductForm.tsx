@@ -33,6 +33,7 @@ interface ProductFormProps {
   onDidDismiss: () => void;
   onSuccess?: () => void;
   initialProduct?: any;
+  initialCategoryId?: string;
 }
 
 export interface AlertMessageProps {
@@ -54,7 +55,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
   isOpen,
   onDidDismiss,
   onSuccess,
-  initialProduct
+  initialProduct,
+  initialCategoryId
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Category[]>([]);
@@ -118,10 +120,18 @@ const ProductForm: React.FC<ProductFormProps> = ({
         category_id: initialProduct.category_id,
         subcategory_id: initialProduct.subcategory_id || null
       });
+    } else if (initialCategoryId) {
+      reset({
+        name: '',
+        price: '',
+        quantity: '',
+        category_id: initialCategoryId,
+        subcategory_id: null
+      });
     } else {
       resetForm();
     }
-  }, [initialProduct, reset]);
+  }, [initialProduct, initialCategoryId, reset]);
 
   const resetForm = () => {
     reset({
