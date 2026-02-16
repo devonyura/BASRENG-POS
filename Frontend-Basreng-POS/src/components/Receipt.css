@@ -3,6 +3,7 @@
   padding: 10px;
   border: 1px solid black;
   font-size: 0.85rem;
+  text-transform: capitalize;
 }
 
 .receipt {
@@ -14,6 +15,7 @@
 .receipt-title th {
   text-align: center !important;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
 .receipt thead tr span,
@@ -45,6 +47,7 @@
   /* border: 1px solid #ddd; */
   padding: 2px;
   text-align: left;
+  font-weight: 600;
 }
 
 .receipt tr th:last-child,
@@ -53,7 +56,7 @@
 }
 
 .receipt tfoot {
-  font-size: .8rem;
+  font-size: 0.8rem;
   text-align: center;
 }
 
@@ -73,6 +76,7 @@
 .receipt p {
   text-align: center;
   margin: 0;
+  font-weight: 600;
 }
 
 .small-text {

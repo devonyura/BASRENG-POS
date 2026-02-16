@@ -11,13 +11,13 @@ import {
   IonButtons,
   IonIcon,
   IonSpinner,
-  IonAlert
-} from '@ionic/react';
-import { useEffect, useState } from 'react';
-import { getUsers, deleteUser, User } from '../../hooks/restAPIUsers';
-import { trash, refresh } from 'ionicons/icons';
-import UserAlertForm from './UserAlertForm';
-import ResetPasswordForm from './ResetPasswordForm';
+  IonAlert,
+} from "@ionic/react";
+import { useEffect, useState } from "react";
+import { getUsers, deleteUser, User } from "../../hooks/restAPIUsers";
+import { trash, refresh } from "ionicons/icons";
+import UserAlertForm from "./UserAlertForm";
+import ResetPasswordForm from "./ResetPasswordForm";
 
 const UsersListPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -26,7 +26,7 @@ const UsersListPage: React.FC = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
-  const [alertMessage, setAlertMessage] = useState({ title: '', message: '' });
+  const [alertMessage, setAlertMessage] = useState({ title: "", message: "" });
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -35,7 +35,7 @@ const UsersListPage: React.FC = () => {
       const data = await getUsers();
       setUsers(data);
     } catch (err: any) {
-      setError('Gagal mengambil data pengguna');
+      setError("Gagal mengambil data pengguna");
       console.error(err);
     } finally {
       setLoading(false);
@@ -47,10 +47,10 @@ const UsersListPage: React.FC = () => {
       await deleteUser(id);
       fetchUsers();
     } catch (err: any) {
-      console.error('Gagal menghapus user:', err);
+      console.error("Gagal menghapus user:", err);
       setAlertMessage({
-        title: 'Gagal Menghapus',
-        message: `${err}`
+        title: "Gagal Menghapus",
+        message: `${err}`,
       });
       setShowAlert(true);
     }
@@ -108,7 +108,7 @@ const UsersListPage: React.FC = () => {
           onDidDismiss={() => setShowAlert(false)}
           header={alertMessage.title}
           message={alertMessage.message}
-          buttons={['OK']}
+          buttons={["OK"]}
         />
         <UserAlertForm
           isOpen={showUserForm}

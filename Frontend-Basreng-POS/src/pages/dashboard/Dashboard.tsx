@@ -15,9 +15,12 @@ import {
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
-  IonCol, IonGrid, IonRow,
+  IonCol,
+  IonGrid,
+  IonRow,
   IonSearchbar,
-  IonList, IonItem,
+  IonList,
+  IonItem,
   IonModal,
   IonItemSliding,
   IonItemOption,
@@ -26,9 +29,11 @@ import {
   IonMenuButton,
   IonAlert,
   IonText,
-  IonChip, IonSpinner, IonToast
-} from '@ionic/react';
-import { statsChart, cashOutline, refresh } from 'ionicons/icons';
+  IonChip,
+  IonSpinner,
+  IonToast,
+} from "@ionic/react";
+import { statsChart, cashOutline, refresh } from "ionicons/icons";
 import {
   LineChart,
   Line,
@@ -42,19 +47,24 @@ import {
   BarChart,
   Bar,
   Cell,
-  Legend
-} from 'recharts';
+  Legend,
+} from "recharts";
 
-
-import { useState, useRef, useEffect } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
-import { loginRequest } from '../../hooks/restAPIRequest';
+import { useState, useRef, useEffect } from "react";
+import { useHistory, useLocation } from "react-router-dom";
+import { loginRequest } from "../../hooks/restAPIRequest";
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./Dashboard.css";
-import { getTransactionSummary, getIncomeByBranch, getTopSellingProduct, getTransactionsReport, BranchIncome } from "../../hooks/restAPIDashboard";
-import { rupiahFormat } from '../../hooks/formatting';
-import DashboardMenu from '../../components/DashboardMenu';
+import {
+  getTransactionSummary,
+  getIncomeByBranch,
+  getTopSellingProduct,
+  getTransactionsReport,
+  BranchIncome,
+} from "../../hooks/restAPIDashboard";
+import { rupiahFormat } from "../../hooks/formatting";
+import DashboardMenu from "../../components/DashboardMenu";
 
 interface LocationState {
   isTokenExpired?: boolean;
@@ -80,14 +90,14 @@ const Dashboard: React.FC = () => {
         const summaryData = await getTransactionSummary();
         setSummary(summaryData);
       } catch (e) {
-        console.warn('Gagal ambil ringkasan transaksi:', e);
+        console.warn("Gagal ambil ringkasan transaksi:", e);
       }
 
       try {
         const incomeData = await getIncomeByBranch();
         setIncomeByBranch(incomeData);
       } catch (e) {
-        console.warn('Gagal ambil pendapatan cabang:', e);
+        console.warn("Gagal ambil pendapatan cabang:", e);
       }
 
       try {
@@ -98,13 +108,13 @@ const Dashboard: React.FC = () => {
         }));
         setTopSellingProduct(pieData);
       } catch (e) {
-        console.warn('Gagal ambil produk terlaris:', e);
+        console.warn("Gagal ambil produk terlaris:", e);
       }
 
       try {
         const response = await getTransactionsReport(30);
         // Pastikan total_sales dikonversi ke number
-        console.log('Chart API response:', response); // 👉 cek isi response
+        console.log("Chart API response:", response); // 👉 cek isi response
         // Asumsikan response adalah array langsung, kalau tidak kita perbaiki
         const formatted = response.map((item: any) => ({
           date: item.date,
@@ -114,10 +124,9 @@ const Dashboard: React.FC = () => {
         console.log(chartData);
         setLoadingChart(false);
       } catch (error: any) {
-        setErrorChart(error.message || 'Gagal memuat chart');
+        setErrorChart(error.message || "Gagal memuat chart");
         setLoadingChart(false);
       }
-
     } catch (err: any) {
       console.error(err);
       setError("Gagal memuat sebagian data dashboard.");
@@ -126,41 +135,46 @@ const Dashboard: React.FC = () => {
     }
   };
 
-
   useEffect(() => {
-
     fetchData();
   }, []);
 
   // setup Alert
   const [alert, setAlert] = useState<AlertState>({
     showAlert: false,
-    header: '',
-    alertMesage: '',
+    header: "",
+    alertMesage: "",
     hideButton: false,
   });
 
   const { login, logout, token, role } = useAuth();
   const history = useHistory();
   const location = useLocation<LocationState>();
-  const [isTokenExpired, setIsTokenExpired] = useState(location.state?.isTokenExpired || false);
+  const [isTokenExpired, setIsTokenExpired] = useState(
+    location.state?.isTokenExpired || false,
+  );
   const [showLogoutAlert, setLogoutShowAlert] = useState(false);
 
-
-
-  const COLORS = ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"];
+  const COLORS = [
+    "#FF6384",
+    "#36A2EB",
+    "#FFCE56",
+    "#4BC0C0",
+    "#9966FF",
+    "#FF9F40",
+  ];
 
   const handleLogout = () => {
     logout();
-  }
+  };
 
   return (
     <>
-      <DashboardMenu onLogout={() => setLogoutShowAlert(true)} />
-      <IonPage id='main-content'>
+      <DashboardMenu onLogout={() => setLogoutShowAlert(true)} role={role} />
+      <IonPage id="main-content">
         <IonHeader>
           <IonToolbar>
-            <IonButtons slot='start'>
+            <IonButtons slot="start">
               <IonMenuButton></IonMenuButton>
             </IonButtons>
             <IonTitle>📊 Ringkasan Hari ini</IonTitle>
@@ -178,14 +192,13 @@ const Dashboard: React.FC = () => {
             </IonToolbar>
           </IonHeader>
           <IonGrid>
-
             {/* Ringkasan Penjualan */}
             <IonRow>
               <IonCol size="12">
                 <IonCard>
                   <IonGrid>
                     <IonRow>
-                      <IonCol className='icon-card'>
+                      <IonCol className="icon-card">
                         <IonIcon icon={statsChart}></IonIcon>
                       </IonCol>
                       <IonCol size="8">
@@ -193,10 +206,16 @@ const Dashboard: React.FC = () => {
                           <IonCardTitle>Transaksi Hari Ini:</IonCardTitle>
                         </IonCardHeader>
                         <IonCardContent>
-                          <div className='details-card'>
+                          <div className="details-card">
                             <h5>Cabang: Semua cabang</h5>
                             <h2>{rupiahFormat(summary?.hari_ini || 0)}</h2>
-                            <h4>Dari <strong>{summary?.jumlah_transaksi_hari_ini || 0}</strong> Transaksi</h4>
+                            <h4>
+                              Dari{" "}
+                              <strong>
+                                {summary?.jumlah_transaksi_hari_ini || 0}
+                              </strong>{" "}
+                              Transaksi
+                            </h4>
                           </div>
                         </IonCardContent>
                       </IonCol>
@@ -208,20 +227,25 @@ const Dashboard: React.FC = () => {
                   <IonCardHeader>
                     <IonCardTitle>🏪 Pendapatan per Cabang</IonCardTitle>
                   </IonCardHeader>
-                  <IonCardContent>{loading ? (
-                    <IonSpinner name="lines-small" />
-                  ) : (
-                    <IonList>
-                      {incomeByBranch.map((branch, idx) => (
-                        <IonItem key={idx}>
-                          <IonLabel>
-                            {branch.branch_name}:<br></br>
-                            <strong>{rupiahFormat(branch.total_income)}</strong> dari < strong > {branch.total_transactions}</strong> transaksi
-                          </IonLabel>
-                        </IonItem>
-                      ))}
-                    </IonList>
-                  )}
+                  <IonCardContent>
+                    {loading ? (
+                      <IonSpinner name="lines-small" />
+                    ) : (
+                      <IonList>
+                        {incomeByBranch.map((branch, idx) => (
+                          <IonItem key={idx}>
+                            <IonLabel>
+                              {branch.branch_name}:<br></br>
+                              <strong>
+                                {rupiahFormat(branch.total_income)}
+                              </strong>{" "}
+                              dari <strong> {branch.total_transactions}</strong>{" "}
+                              transaksi
+                            </IonLabel>
+                          </IonItem>
+                        ))}
+                      </IonList>
+                    )}
                   </IonCardContent>
                 </IonCard>
                 <IonCard>
@@ -237,7 +261,10 @@ const Dashboard: React.FC = () => {
                           <IonCol size="12">
                             <IonChip color="medium">
                               <IonIcon icon={cashOutline} />
-                              <IonLabel>Minggu Ini: {rupiahFormat(summary?.minggu_ini || 0)}</IonLabel>
+                              <IonLabel>
+                                Minggu Ini:{" "}
+                                {rupiahFormat(summary?.minggu_ini || 0)}
+                              </IonLabel>
                             </IonChip>
                           </IonCol>
                         </IonRow>
@@ -245,7 +272,10 @@ const Dashboard: React.FC = () => {
                           <IonCol size="12">
                             <IonChip color="tertiary">
                               <IonIcon icon={cashOutline} />
-                              <IonLabel>Bulan Ini: {rupiahFormat(summary?.bulan_ini || 0)}</IonLabel>
+                              <IonLabel>
+                                Bulan Ini:{" "}
+                                {rupiahFormat(summary?.bulan_ini || 0)}
+                              </IonLabel>
                             </IonChip>
                           </IonCol>
                         </IonRow>
@@ -280,7 +310,10 @@ const Dashboard: React.FC = () => {
                               label
                             >
                               {topSellingProduct.map((_, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={COLORS[index % COLORS.length]}
+                                />
                               ))}
                             </Pie>
                             <Tooltip />
@@ -305,16 +338,27 @@ const Dashboard: React.FC = () => {
                   </IonCardHeader>
                   <IonCardContent>
                     {loadingChart && <p>Memuat data chart...</p>}
-                    {errorChart && <p style={{ color: 'red' }}>{errorChart}</p>}
+                    {errorChart && <p style={{ color: "red" }}>{errorChart}</p>}
 
                     {!loadingChart && !errorChart && (
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={chartData}>
                           <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
                           <XAxis dataKey="date" angle={-50} textAnchor="end" />
-                          <YAxis tickFormatter={(value) => `${value / 1_000_000}jt`} />
-                          <Tooltip formatter={(value: number) => `Rp.${value.toLocaleString()}`} />
-                          <Bar type="monotone" dataKey="total_sales" stroke="#3880ff" strokeWidth={2} />
+                          <YAxis
+                            tickFormatter={(value) => `${value / 1_000_000}jt`}
+                          />
+                          <Tooltip
+                            formatter={(value: number) =>
+                              `Rp.${value.toLocaleString()}`
+                            }
+                          />
+                          <Bar
+                            type="monotone"
+                            dataKey="total_sales"
+                            stroke="#3880ff"
+                            strokeWidth={2}
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     )}
@@ -322,18 +366,16 @@ const Dashboard: React.FC = () => {
                 </IonCard>
               </IonCol>
             </IonRow>
-
-          </IonGrid >
+          </IonGrid>
           {/* Error Message */}
-          < IonToast
-            isOpen={!!error
-            }
+          <IonToast
+            isOpen={!!error}
             message={error!}
             duration={3000}
             color="danger"
             onDidDismiss={() => setError(null)}
           />
-        </IonContent >
+        </IonContent>
 
         <IonAlert
           isOpen={showLogoutAlert}
@@ -356,12 +398,14 @@ const Dashboard: React.FC = () => {
           isOpen={alert.showAlert}
           header={alert.header}
           message={alert.alertMesage}
-          onDidDismiss={() => setAlert(prevState => ({ ...prevState, showAlert: false }))}
+          onDidDismiss={() =>
+            setAlert((prevState) => ({ ...prevState, showAlert: false }))
+          }
           hideButton={alert.hideButton}
         />
-      </IonPage >
+      </IonPage>
     </>
-  )
+  );
 };
 
 export default Dashboard;

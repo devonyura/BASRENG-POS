@@ -66,7 +66,7 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
     is_reseller,
   } = props;
 
-  const { username, branchID } = useAuth();
+  const { username, branchData } = useAuth();
 
   // const [branchDataState] = useState<BranchData | null>(branchData);
 
@@ -75,7 +75,14 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
       <table className="receipt">
         <thead>
           <tr className="receipt-title">
-            <th colSpan={4}>- Basreng Ghosting Palu -</th>
+            <th colSpan={4}>- BASRENG GHOSTING {branchData?.branch_name} -</th>
+          </tr>
+          <tr className="receipt-title">
+            <th colSpan={4}>
+              {branchData?.branch_address
+                ? `- ${branchData.branch_address} -`
+                : "- Jalan ? -"}
+            </th>
           </tr>
           <tr>
             <th colSpan={4}>
@@ -165,21 +172,23 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
         <tfoot>
           <tr>
             <td colSpan={3}>Tgl. 28-10-2025</td>
-            <td>Cabang: {branchID}</td>
+            <td>Cabang: {branchData?.branch_name}</td>
           </tr>
           <tr>
             <td colSpan={4} className="info">
-              <p>- Basreng Ghosting Palu -</p>
-              <p>- Berbagai cemilan pedas, mochi & sushi -</p>
-              <p>- Jalan Contoh -</p>
+              <p>- Menjual Berbagai cemilan pedas -</p>
+              <p>- mochi & sushi -</p>
               <p>Selamat Menikmati :) </p>
-              <p>PESANAN SUDAH DISTRUK TIDAK DAPAT DIUBAH</p>
+              <p>PESANAN SUDAH DISTRUK TIDAK DAPAT DIKEMBALIKAN</p>
             </td>
           </tr>
           <tr>
             <td colSpan={4}>
               <p>
-                <i>App by Devon Yura Software House</i>
+                <i>BASRENG POS v.1.1</i>
+              </p>
+              <p>
+                <i>App by Devon Yura Interactive Software House</i>
               </p>
             </td>
           </tr>
