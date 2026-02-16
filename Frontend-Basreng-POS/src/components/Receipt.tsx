@@ -19,6 +19,7 @@ import { rupiahFormat, formatProductName } from "../hooks/formatting";
 import { getBranch } from "../hooks/restAPIRequest";
 import { useAuth } from "../hooks/useAuthCookie";
 import "./Receipt.css";
+import { textAlign } from "html2canvas/dist/types/css/property-descriptors/text-align";
 
 interface ReceiptProps {
   // branch: string[];
@@ -44,6 +45,8 @@ interface ReceiptProps {
   receiptNoteNumber: string | null;
   discount: number | string;
   is_reseller: boolean;
+  isShopeeOrder: boolean;
+  shopeeCode: string | null | undefined;
   // branchData: BranchData | null;
 }
 
@@ -64,6 +67,8 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
     receiptNoteNumber,
     discount,
     is_reseller,
+    isShopeeOrder,
+    shopeeCode,
   } = props;
 
   const { username, branchData } = useAuth();
@@ -170,6 +175,13 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
           )}
         </tbody>
         <tfoot>
+          {isShopeeOrder && (
+            <tr className="shopee-code">
+              <td colSpan={4}>
+                <span>{shopeeCode}</span>
+              </td>
+            </tr>
+          )}
           <tr>
             <td colSpan={3}>Tgl. 28-10-2025</td>
             <td>Cabang: {branchData?.branch_name}</td>

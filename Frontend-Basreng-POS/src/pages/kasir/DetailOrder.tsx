@@ -56,9 +56,6 @@ import {
 } from "../../hooks/formatting";
 import React from "react";
 
-// save struk
-import html2canvas from "html2canvas";
-
 const DetailOrder: React.FC = () => {
   // untuk reset Cart
   const dispatch = useDispatch();
@@ -91,6 +88,7 @@ const DetailOrder: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isCash, setIsCash] = useState(false);
   const [isOnlineOrder, setIsOnlineOrder] = useState(false);
+  const [isShopeeOrder, setIsShopeeOrder] = useState(false);
 
   // Form
   const [cashGiven, setCashGiven] = useState<number | null>(null);
@@ -100,6 +98,7 @@ const DetailOrder: React.FC = () => {
     address: "",
     notes: "",
   });
+  const [shopeeCode, setShopeeCode] = useState<string | null | undefined>("");
 
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const totalBeforeDiscount: any = useSelector(selectorCartTotal);
@@ -429,86 +428,29 @@ const DetailOrder: React.FC = () => {
                 </IonItem>
               )}
               <IonItem>
-                <IonGrid>
-                  <IonRow>
-                    <IonCol size="9">
-                      <IonSelect
-                        name="payment_method"
-                        label="Pembayaran:"
-                        value={paymentMethod}
-                        onIonChange={(e) => setPaymentMethod(e.detail.value)}
-                      >
-                        <IonSelectOption value="cash">Cash</IonSelectOption>
-                        <IonSelectOption value="qris">QRIS</IonSelectOption>
-                        <IonSelectOption value="transfer_bank">
-                          TRANSFER BANK
-                        </IonSelectOption>
-                      </IonSelect>
-                    </IonCol>
-                    <IonCol
-                      className={`flex-center qr-method ${
-                        paymentMethod === "qris" ||
-                        paymentMethod === "transfer_bank"
-                          ? ""
-                          : "hidden-button"
-                      }`}
-                    >
-                      <IonButton id="open-payment-method" expand="full">
-                        {paymentMethod === "qris" ? "QR" : "TF"}
-                      </IonButton>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </IonItem>
-              <IonItem>
                 <IonCheckbox
-                  checked={isCash}
-                  onIonChange={(e) => setIsCash(e.detail.checked)}
+                  id="online-check"
+                  checked={isShopeeOrder}
+                  onIonChange={(e) => {
+                    setIsShopeeOrder(e.detail.checked);
+                    setIsCash(e.detail.checked);
+                  }}
+                  disabled={isOnlineOrder}
                 >
-                  Uang Pas
+                  Pesanan Shopee?
                 </IonCheckbox>
               </IonItem>
-              <div className={`cash ${isCash ? "hidden-button" : ""}`}>
-                <IonItem>
-                  <IonInput
-                    type="number"
-                    label="Masukkan Cash:"
-                    value={cashGiven ?? ""}
-                    onIonChange={(e) =>
-                      setCashGiven(parseInt(e.detail.value!, 10))
-                    }
-                  ></IonInput>
-                </IonItem>
-                <IonItem>
-                  {[20000, 30000, 50000, 100000].map((nominal, key) => (
-                    <IonButton
-                      key={nominal}
-                      color={buttonColorCash[key]}
-                      size="small"
-                      onClick={() => setCashGiven(nominal)}
-                    >
-                      {rupiahFormat(nominal, false)}
-                    </IonButton>
-                  ))}
-                </IonItem>
-                <IonItem>
-                  <IonInput
-                    className="input-digit"
-                    label="Kembalian:"
-                    value={rupiahFormat(change)}
-                    disabled
-                  ></IonInput>
-                </IonItem>
-              </div>
               <IonItem>
                 <IonCheckbox
                   id="online-check"
                   checked={isOnlineOrder}
                   onIonChange={(e) => setIsOnlineOrder(e.detail.checked)}
+                  disabled={isShopeeOrder}
                 >
-                  Pesanan Online?
+                  Antar Maxim?
                 </IonCheckbox>
               </IonItem>
+
               <IonItemGroup className={!isOnlineOrder ? "hidden-button" : ""}>
                 <IonItemDivider>
                   <IonLabel>Info Pemesan</IonLabel>
@@ -573,13 +515,100 @@ const DetailOrder: React.FC = () => {
                   <IonButton
                     expand="block"
                     size="small"
-                    color={"dark"}
+                    color={"warning"}
                     onClick={copyCustomerInfoToClipboard}
                   >
                     Salin Info Pemesan (Untuk Order Maxim)
                   </IonButton>
                 </IonItem>
               </IonItemGroup>
+              {/* Input No SPX shopee */}
+              <IonItemGroup className={!isShopeeOrder ? "hidden-button" : ""}>
+                <IonItemDivider>
+                  <IonLabel>Nomor Pesanan Shopee</IonLabel>
+                </IonItemDivider>
+                <IonItem>
+                  <IonInput
+                    name="shoppeCode"
+                    type="text"
+                    placeholder="Masukkan No Pesanan, Contoh SPXID025489712345"
+                    value={shopeeCode}
+                    onIonChange={(e) => setShopeeCode(e.detail.value)}
+                  ></IonInput>
+                </IonItem>
+              </IonItemGroup>
+              <IonItem>
+                <IonGrid>
+                  <IonRow>
+                    <IonCol size="9" hidden={isShopeeOrder}>
+                      <IonSelect
+                        name="payment_method"
+                        label="Pembayaran:"
+                        value={paymentMethod}
+                        onIonChange={(e) => setPaymentMethod(e.detail.value)}
+                      >
+                        <IonSelectOption value="cash">Cash</IonSelectOption>
+                        <IonSelectOption value="qris">QRIS</IonSelectOption>
+                        <IonSelectOption value="transfer_bank">
+                          TRANSFER BANK
+                        </IonSelectOption>
+                      </IonSelect>
+                    </IonCol>
+                    <IonCol
+                      className={`flex-center qr-method ${
+                        paymentMethod === "qris" ||
+                        paymentMethod === "transfer_bank"
+                          ? ""
+                          : "hidden-button"
+                      }`}
+                    >
+                      <IonButton id="open-payment-method" expand="full">
+                        {paymentMethod === "qris" ? "QR" : "TF"}
+                      </IonButton>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </IonItem>
+              <IonItem disabled={isShopeeOrder}>
+                <IonCheckbox
+                  checked={isCash}
+                  onIonChange={(e) => setIsCash(e.detail.checked)}
+                >
+                  Uang Pas
+                </IonCheckbox>
+              </IonItem>
+              <div className={`cash ${isCash ? "hidden-button" : ""}`}>
+                <IonItem>
+                  <IonInput
+                    type="number"
+                    label="Masukkan Cash:"
+                    value={cashGiven ?? ""}
+                    onIonChange={(e) =>
+                      setCashGiven(parseInt(e.detail.value!, 10))
+                    }
+                  ></IonInput>
+                </IonItem>
+                <IonItem>
+                  {[20000, 30000, 50000, 100000].map((nominal, key) => (
+                    <IonButton
+                      key={nominal}
+                      color={buttonColorCash[key]}
+                      size="small"
+                      onClick={() => setCashGiven(nominal)}
+                    >
+                      {rupiahFormat(nominal, false)}
+                    </IonButton>
+                  ))}
+                </IonItem>
+                <IonItem>
+                  <IonInput
+                    className="input-digit"
+                    label="Kembalian:"
+                    value={rupiahFormat(change)}
+                    disabled
+                  ></IonInput>
+                </IonItem>
+              </div>
             </IonList>
           </div>
           <Receipt
@@ -593,6 +622,8 @@ const DetailOrder: React.FC = () => {
             receiptNoteNumber={receiptNoteNumber || "0"}
             discount={discount}
             is_reseller={isReseller}
+            isShopeeOrder={isShopeeOrder}
+            shopeeCode={shopeeCode}
           ></Receipt>
           <IonButton
             expand="block"

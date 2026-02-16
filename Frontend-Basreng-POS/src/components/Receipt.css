@@ -82,3 +82,13 @@
 .small-text {
   font-size: 0.8rem;
 }
+
+.shopee-code td {
+  text-align: center !important;
+  font-size: x-large;
+}
+
+.shopee-code td span {
+  font-weight: 600;
+  letter-spacing: 1px;
+}
