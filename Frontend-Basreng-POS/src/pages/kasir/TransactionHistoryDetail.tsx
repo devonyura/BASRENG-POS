@@ -4,21 +4,31 @@ import {
   IonHeader,
   IonTitle,
   IonToolbar,
-  IonModal, IonBadge,
-  IonItemDivider, IonList, IonSelect, IonSelectOption,
-  IonCheckbox, IonButtons, IonAlert, IonSpinner
-} from '@ionic/react';
-import { cart, cellular, flashOutline, receipt } from 'ionicons/icons';
+  IonModal,
+  IonBadge,
+  IonItemDivider,
+  IonList,
+  IonSelect,
+  IonSelectOption,
+  IonCheckbox,
+  IonButtons,
+  IonAlert,
+  IonSpinner,
+} from "@ionic/react";
+import { cart, cellular, flashOutline, receipt } from "ionicons/icons";
 
-import { useState, useEffect, useRef } from 'react';
-import { findTransactionHistory, getTransactionHistory } from '../../hooks/restAPIRequest';
+import { useState, useEffect, useRef } from "react";
+import {
+  findTransactionHistory,
+  getTransactionHistory,
+} from "../../hooks/restAPIRequest";
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
-import { OverlayEventDetail } from '@ionic/core/components';
+import { OverlayEventDetail } from "@ionic/core/components";
 import Receipt, { BranchData } from "../../components/Receipt";
 
-import React from 'react';
+import React from "react";
 
 interface TransactionHistoryDetailProps {
   transactionCode: string | null;
@@ -51,6 +61,9 @@ export interface Transaction {
   customer_phone: string;
   notes: string;
   created_at: string;
+  reseller_id: number | null;
+  transaction_type: string | null;
+  shopee_code: string | null | undefined;
 }
 
 export interface TransactionHistoryData {
@@ -59,23 +72,24 @@ export interface TransactionHistoryData {
 }
 
 // save struk
-import html2canvas from 'html2canvas';
+import html2canvas from "html2canvas";
 
 const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
   transactionCode,
   isOpen = undefined,
-  onDidDismiss
+  onDidDismiss,
 }) => {
   const modal = useRef<HTMLIonModalElement>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [transactionData, setTransactionData] = useState<TransactionHistoryData | null>(null);
+  const [transactionData, setTransactionData] =
+    useState<TransactionHistoryData | null>(null);
   const [shareFile, setShareFile] = useState<File | null>(null);
   const [isSharing, setIsSharing] = useState(false);
 
   const [alert, setAlert] = useState<AlertState>({
     showAlert: false,
-    header: '',
-    alertMesage: '',
+    header: "",
+    alertMesage: "",
     hideButton: false,
   });
 
@@ -83,16 +97,15 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
     if (transactionCode) {
       (async () => {
         try {
-          const data = await findTransactionHistory(transactionCode)
+          const data = await findTransactionHistory(transactionCode);
           console.log(data);
-          setTransactionData(data)
+          setTransactionData(data);
         } catch (error) {
-          console.error("Gagal Ambil Detail Transaksi", error)
+          console.error("Gagal Ambil Detail Transaksi", error);
         }
       })();
     }
-
-  }, [transactionCode])
+  }, [transactionCode]);
 
   const generateImageReceipt = async () => {
     setIsSharing(true);
@@ -105,23 +118,27 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
       }
 
       const canvas = await html2canvas(receiptRef.current);
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL("image/png");
       const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], `${transactionData?.transactions.transaction_code}.png`, {
-        type: 'image/png'
-      });
+      const file = new File(
+        [blob],
+        `${transactionData?.transactions.transaction_code}.png`,
+        {
+          type: "image/png",
+        },
+      );
       setShareFile(file);
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: 'Struk Pesanan',
-          text: 'Berikut adalah struk pemesanan Anda.',
+          title: "Struk Pesanan",
+          text: "Berikut adalah struk pemesanan Anda.",
           files: [file],
         });
       } else {
         // fallback download
         const url = URL.createObjectURL(file);
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = url;
         link.download = `${transactionData?.transactions.transaction_code}.png`;
         link.click();
@@ -133,8 +150,6 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
 
     setIsSharing(false);
   };
-
-
 
   return (
     <>
@@ -154,41 +169,58 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
               cash={Number(transactionData.transactions.cash_amount)}
               change={Number(transactionData.transactions.change_amount)}
               total={Number(transactionData.transactions.total_price)}
-              isOnlineOrders={transactionData.transactions.is_online_order === "1"}
+              isOnlineOrders={
+                transactionData.transactions.is_online_order === "1"
+              }
               customerInfo={{
                 name: transactionData.transactions.customer_name,
                 address: transactionData.transactions.customer_address,
                 phone: transactionData.transactions.customer_phone,
-                notes: transactionData.transactions.notes
+                notes: transactionData.transactions.notes,
               }}
-              cartItems={transactionData.transaction_details.map(item => ({
+              cartItems={transactionData.transaction_details.map((item) => ({
                 id: item.product_id, // ✅ ganti dari product_id -> id
                 name: item.product_name, // ✅ ganti dari product_name -> name
                 price: Number(item.price),
                 quantity: Number(item.quantity),
               }))}
               receiptNoteNumber={transactionData.transactions.transaction_code}
+              discount={0}
+              is_reseller={
+                transactionData.transactions.reseller_id ? true : false
+              }
+              isShopeeOrder={
+                transactionData.transactions.shopee_code ? true : false
+              }
+              shopeeCode={transactionData.transactions.shopee_code}
             />
           )}
 
           <IonButton expand="block" onClick={onDidDismiss}>
             Kembali
           </IonButton>
-          <IonButton expand="block" color={'success'} onClick={() => generateImageReceipt()} disabled={isSharing}>
-            {isSharing ? <IonSpinner name='dots' /> : `Bagikan Struk`}
+          <IonButton
+            expand="block"
+            color={"success"}
+            onClick={() => generateImageReceipt()}
+            disabled={isSharing}
+          >
+            {isSharing ? <IonSpinner name="dots" /> : `Bagikan Struk`}
           </IonButton>
-          <div className='space'></div>
+          <div className="space"></div>
         </IonContent>
       </IonModal>
       <AlertInfo
         isOpen={alert.showAlert}
         header={alert.header}
         message={alert.alertMesage}
-        onDidDismiss={() => setAlert(prevState => ({ ...prevState, showAlert: false }))}
+        onDidDismiss={() =>
+          setAlert((prevState) => ({ ...prevState, showAlert: false }))
+        }
         hideButton={alert.hideButton}
       />
     </>
-  )
+  );
 };
 
 export default TransactionHistoryDetail;

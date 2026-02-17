@@ -23,91 +23,95 @@ class TransactionsController extends ResourceController
     $this->db = \Config\Database::connect();
   }
 
-  public function createTransaction()
-  {
-    $input = $this->request->getJSON(true);
-    if (!$input) {
-      return $this->fail("Invalid JSON Format", 400);
-    }
+  // public function createTransaction()
+  // {
+  //   $input = $this->request->getJSON(true);
+  //   if (!$input) {
+  //     return $this->fail("Invalid JSON Format", 400);
+  //   }
 
-    $isReseller = !empty($input['is_reseller']);
-    $discountInfo = $this->calculateResellerDiscount($input['transaction_details'], $isReseller);
-    $discountAmount = $discountInfo['discount'];
+  //   $isReseller = !empty($input['is_reseller']);
+  //   $discountInfo = $this->calculateResellerDiscount($input['transaction_details'], $isReseller);
+  //   $discountAmount = $discountInfo['discount'];
 
-    $totalBeforeDiscount = 0;
-    foreach ($input['transaction_details'] as $detail) {
-      $totalBeforeDiscount += ((int) $detail['price'] * (int) $detail['quantity']);
-    }
-    $totalPrice = max(0, $totalBeforeDiscount - $discountAmount);
+  //   $totalBeforeDiscount = 0;
+  //   foreach ($input['transaction_details'] as $detail) {
+  //     $totalBeforeDiscount += ((int) $detail['price'] * (int) $detail['quantity']);
+  //   }
+  //   $totalPrice = max(0, $totalBeforeDiscount - $discountAmount);
 
-    $cashAmount = $input['cash_amount'] ?? null;
-    $changeAmount = $input['change_amount'] ?? null;
-    if (($input['payment_method'] ?? '') === 'cash' && $cashAmount !== null) {
-      $changeAmount = (int) $cashAmount - $totalPrice;
-    }
+  //   $cashAmount = $input['cash_amount'] ?? null;
+  //   $changeAmount = $input['change_amount'] ?? null;
+  //   if (($input['payment_method'] ?? '') === 'cash' && $cashAmount !== null) {
+  //     $changeAmount = (int) $cashAmount - $totalPrice;
+  //   }
 
-    // Generate transaction code
-    $now = new \DateTime();
-    $randomNumber = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
-    $transaction_code = sprintf("CAB01%s%02d", $now->format('dmyHi'), $randomNumber);
+  //   // Generate transaction code
+  //   $now = new \DateTime();
+  //   $randomNumber = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
+  //   $transaction_code = sprintf("CAB01%s%02d", $now->format('dmyHi'), $randomNumber);
 
-    // Prepare Transaction data
-    $transactionData = [
-      'user_id'          => $input['user_id'],
-      'transaction_code' =>  $transaction_code,
-      'total_price' => $totalPrice,
-      'payment_method' => $input['payment_method'],
-      'is_online_order' => $input['is_online_order'],
-      'cash_amount' => $cashAmount,
-      'change_amount' => $changeAmount,
-      'created_at' => date('Y-m-d H:i:s')
-    ];
+  //   // Prepare Transaction data
+  //   $transactionData = [
+  //     'transaction_code' =>  $transaction_code,
+  //     'user_id'          => $input['user_id'],
+  //     'total_price' => $totalPrice,
+  //     'cash_amount' => $cashAmount,
+  //     'change_amount' => $changeAmount,
+  //     'payment_method' => $input['payment_method'],
+  //     'is_online_order' => $input['is_online_order'],
+  //   ];
 
-    // Add Customer data if is_online_order === 1
-    if ($input['is_online_order'] === 1) {
-      $transactionData['customer_name'] = $input['customer_name'] ?? null;
-      $transactionData['customer_address'] = $input['customer_address'] ?? null;
-      $transactionData['customer_phone'] = $input['customer_phone'] ?? null;
-      $transactionData['notes'] = $input['notes'] ?? null;
-    }
+  //   // Add Customer data if is_online_order === 1
+  //   if ($input['is_online_order'] === 1) {
+  //     $transactionData['customer_name'] = $input['customer_name'] ?? null;
+  //     $transactionData['customer_address'] = $input['customer_address'] ?? null;
+  //     $transactionData['customer_phone'] = $input['customer_phone'] ?? null;
+  //     $transactionData['notes'] = $input['notes'] ?? null;
+  //   }
+  //   $transactionData['branch_id'] = $input['branch_id'];
+  //   $transactionData['reseller_id'] = $input['reseller_id'];
+  //   $transactionData['transaction_type'] = $input['transaction_type'];
+  //   $transactionData['shopee_code'] = $input['shopee_code'];
 
-    $this->db->transStart();
+  //   $this->db->transStart();
 
-    // Insert Transaction data actions
-    $this->db->table('transactions')->insert($transactionData);
-    $transaction_id = $this->db->insertID();
 
-    if (!$transaction_id) {
-      $this->db->transRollback();
-      return $this->fail('Failed to create transaction', 500);
-    }
+  //   // Insert Transaction data actions
+  //   $this->db->table('transactions')->insert($transactionData);
+  //   $transaction_id = $this->db->insertID();
 
-    // Insert transaction_details
-    $transaction_details = [];
-    foreach ($input['transaction_details'] as $detail) {
-      $transaction_details[] = [
-        'transaction_id' => $transaction_id,
-        'product_id' => $detail['product_id'],
-        'quantity' => $detail['quantity'],
-        'price' => $detail['price'],
-        'subtotal' => ($detail['price'] * $detail['quantity']),
-        'created_at' => date('Y-m-d H:i:s')
-      ];
-    }
+  //   if (!$transaction_id) {
+  //     $this->db->transRollback();
+  //     return $this->fail('Failed to create transaction', 500);
+  //   }
 
-    $this->db->table('transaction_details')->insertBatch($transaction_details);
+  //   // Insert transaction_details
+  //   $transaction_details = [];
+  //   foreach ($input['transaction_details'] as $detail) {
+  //     $transaction_details[] = [
+  //       'transaction_id' => $transaction_id,
+  //       'product_id' => $detail['product_id'],
+  //       'quantity' => $detail['quantity'],
+  //       'price' => $detail['price'],
+  //       'subtotal' => ($detail['price'] * $detail['quantity']),
+  //       'created_at' => date('Y-m-d H:i:s')
+  //     ];
+  //   }
 
-    $this->db->transComplete();
+  //   $this->db->table('transaction_details')->insertBatch($transaction_details);
 
-    if ($this->db->transStatus() === false) {
-      return $this->fail('Transaction Failed, please try again', 500);
-    }
+  //   $this->db->transComplete();
 
-    return $this->respond([
-      'message' => 'Transaction created Successfully',
-      'transaction_code' => $transaction_code
-    ]);
-  }
+  //   if ($this->db->transStatus() === false) {
+  //     return $this->fail('Transaction Failed, please try again', 500);
+  //   }
+
+  //   return $this->respond([
+  //     'message' => 'Transaction created Successfully',
+  //     'transaction_code' => $transaction_code
+  //   ]);
+  // }
 
   public function get_receipt()
   {
@@ -385,6 +389,9 @@ class TransactionsController extends ResourceController
     $transactionDetailsModel = new \App\Models\TransactionDetailsModel();
 
     $data = $this->request->getJSON(true);
+    if (!$data) {
+      return $this->fail("Invalid JSON Format", 400);
+    }
 
     // Validasi awal
     if (!isset($data['transaction']) || !isset($data['transaction_details'])) {
@@ -399,9 +406,9 @@ class TransactionsController extends ResourceController
       'user_id'          => 'required|integer',
       'branch_id'        => 'required|integer',
       'date_time'        => 'required',
-      'total_price'      => 'required|decimal',
-      'cash_amount'      => 'required|decimal',
-      'change_amount'    => 'required|decimal',
+      'total_price'      => 'required|numeric',
+      'cash_amount'      => 'required|numeric',
+      'change_amount'    => 'required|numeric',
       'payment_method'   => 'required',
       'is_online_order'  => 'required',
     ];
@@ -425,6 +432,9 @@ class TransactionsController extends ResourceController
       'customer_address' => $transaction['customer_address'] ?? '',
       'customer_phone'   => $transaction['customer_phone'] ?? '',
       'notes'            => $transaction['notes'] ?? '',
+      'reseller_id'      => $transaction['reseller_id'] ?? null,
+      'transaction_type' => $transaction['transaction_type'] ?? null,
+      'shopee_code'      => $transaction['shopee_code'] ?? null,
     ];
 
     // Mulai database transaction

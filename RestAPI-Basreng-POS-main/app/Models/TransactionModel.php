@@ -11,8 +11,6 @@ class TransactionModel extends Model
   protected $allowedFields = [
     'transaction_code',
     'user_id',
-    'branch_id',
-    'date_time',
     'total_price',
     'cash_amount',
     'change_amount',
@@ -21,10 +19,16 @@ class TransactionModel extends Model
     'customer_name',
     'customer_address',
     'customer_phone',
-    'notes'
+    'notes',
+    'branch_id',
+    'reseller_id',
+    'transaction_type',
+    'shopee_code',
+    'date_time',
+
   ];
   protected $useTimestamps = true;
   protected $dateFormat    = 'datetime';
-  protected $createdField  = 'created_at';
+  protected $createdField  = 'date_time';
   protected $updatedField = '';
 }

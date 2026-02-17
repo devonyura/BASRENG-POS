@@ -37,7 +37,7 @@ import { getResellers, Reseller } from "../../hooks/restAPIResellers";
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
-import { OverlayEventDetail } from "@ionic/core/components";
+import { OverlayEventDetail, setAssetPath } from "@ionic/core/components";
 import qrcode from "../../../public/img/qr/images.png";
 import Receipt, { BranchData } from "../../components/Receipt";
 
@@ -104,8 +104,11 @@ const DetailOrder: React.FC = () => {
   const totalBeforeDiscount: any = useSelector(selectorCartTotal);
 
   const [resellers, setResellers] = useState<Reseller[]>([]);
-  const [selectedResellerId, setSelectedResellerId] = useState<string>("");
-  const isReseller = selectedResellerId !== "";
+  const [selectedResellerId, setSelectedResellerId] = useState<number | null>(
+    null,
+  );
+  const [transactionType, setTransactionType] = useState<string | null>(null);
+  const isReseller = selectedResellerId !== null;
 
   const calculateResellerDiscount = (
     items: typeof cartItems,
@@ -213,7 +216,7 @@ const DetailOrder: React.FC = () => {
 
   const receiptRef = useRef<HTMLDivElement>(null);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  const [shareFile, setShareFile] = useState<File | null>(null);
+  // const [shareFile, setShareFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertBeforeSubmit, setAlertBeforeSubmit] = useState(false);
   const [isResetButton, setIsResetButton] = useState(false);
@@ -245,7 +248,6 @@ const DetailOrder: React.FC = () => {
       transaction: {
         transaction_code: generateReceiptNumber(Number(branchID), username),
         user_id: Number(idUser),
-        branch_id: Number(branchID),
         date_time: formattedDateTime,
         total_price: total,
         cash_amount: cash_amounts,
@@ -253,10 +255,14 @@ const DetailOrder: React.FC = () => {
         payment_method: paymentMethod,
         is_online_order: isOnlineOrder === true ? 1 : 0,
         customer_name: customerInfo.name === "" ? null : customerInfo.name,
-        customer_phone: customerInfo.phone === "" ? null : customerInfo.phone,
         customer_address:
           customerInfo.address === "" ? null : customerInfo.name,
+        customer_phone: customerInfo.phone === "" ? null : customerInfo.phone,
         notes: customerInfo.notes === "" ? null : customerInfo.notes,
+        branch_id: Number(branchID),
+        reseller_id: selectedResellerId,
+        transaction_type: getTransactionType(),
+        shopee_code: shopeeCode,
       },
 
       transaction_details: cartItems.map((item) => ({
@@ -312,7 +318,7 @@ const DetailOrder: React.FC = () => {
     setPaymentMethod("cash");
     setIsCash(false);
     setCashGiven(null);
-    setSelectedResellerId("");
+    setSelectedResellerId(null);
     setCustomerInfo({
       name: "",
       phone: "",
@@ -321,6 +327,9 @@ const DetailOrder: React.FC = () => {
     });
     // setShareFile(null);
     setIsSubmitting(false);
+    setShopeeCode(null);
+    setIsShopeeOrder(false);
+    setSelectedResellerId(null);
 
     dispatch(clearCart());
 
@@ -328,6 +337,19 @@ const DetailOrder: React.FC = () => {
     modal.current?.dismiss();
   };
   // ======================================================================= Reset Input End
+
+  // ======================================================================= set Transaction_type
+  const getTransactionType = () => {
+    let transactionType = "";
+
+    if (!isShopeeOrder) {
+      transactionType = paymentMethod;
+    } else {
+      transactionType = "shopee";
+    }
+    return transactionType;
+  };
+  // ======================================================================= END set Transaction_type
 
   // === Online Order copy paste
   const copyCustomerInfoToClipboard = () => {
@@ -404,7 +426,7 @@ const DetailOrder: React.FC = () => {
                   value={selectedResellerId}
                   placeholder="Pilih Reseller"
                   onIonChange={(e) =>
-                    setSelectedResellerId(String(e.detail.value ?? ""))
+                    setSelectedResellerId(Number(e.detail.value ?? null))
                   }
                 >
                   <IonSelectOption value="">
@@ -529,7 +551,7 @@ const DetailOrder: React.FC = () => {
                 </IonItemDivider>
                 <IonItem>
                   <IonInput
-                    name="shoppeCode"
+                    name="shopeeCode"
                     type="text"
                     placeholder="Masukkan No Pesanan, Contoh SPXID025489712345"
                     value={shopeeCode}

@@ -45,17 +45,20 @@ export interface TransactionPayload {
 interface Transaction {
 	transaction_code: string;
 	user_id: number;
-	branch_id: number;
-	date_time: string;
+	date_time: string,
 	total_price: number;
 	cash_amount: number | null;
 	change_amount: number;
 	payment_method: string;
 	is_online_order: boolean | number;
 	customer_name: string | null;
-	customer_phone: string | null;
 	customer_address: string | null;
+	customer_phone: string | null;
 	notes: string | null;
+	branch_id: number;
+	reseller_id: number|null;
+	transaction_type: string|null;
+	shopee_code: string|null|undefined;
 }
 
 interface TransactionDetails {
