@@ -16,24 +16,21 @@ import {
 } from "@ionic/react";
 import { useEffect, useState } from "react";
 import {
-  createProduct,
-  updateProduct,
-  ProductPayload,
-  UpdateProductPayload,
-} from "../../hooks/restAPIProducts";
+  createPackage,
+  updatePackage,
+  UpdatePackagePayload,
+} from "../../hooks/restAPIPackage";
 import { getCategories, Category } from "../../hooks/restAPICategories";
-import { getSubCategoriesbyCategory } from "../../hooks/restAPISubCategories";
 
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-interface ProductFormProps {
+interface PackageFormProps {
   isOpen: boolean;
   onDidDismiss: () => void;
   onSuccess?: () => void;
-  initialProduct?: any;
-  initialCategoryId?: string;
+  initialPackage?: any;
 }
 
 export interface AlertMessageProps {
@@ -41,22 +38,18 @@ export interface AlertMessageProps {
   message: string;
 }
 
-const productSchema = z.object({
+const packageSchema = z.object({
   name: z.string().min(1, "Nama produk harus diisi"),
   price: z.string().min(1, "Harga harus diisi"),
-  quantity: z.string().min(1, "Quantity harus diisi"),
-  category_id: z.string().min(1, "Kategori harus dipilih"),
-  subcategory_id: z.string().nullable().optional(),
 });
 
-type ProductFormData = z.infer<typeof productSchema>;
+type PackageFormData = z.infer<typeof packageSchema>;
 
-const ProductForm: React.FC<ProductFormProps> = ({
+const PackageForm: React.FC<PackageFormProps> = ({
   isOpen,
   onDidDismiss,
   onSuccess,
-  initialProduct,
-  initialCategoryId,
+  initialPackage,
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Category[]>([]);
@@ -73,32 +66,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
     reset,
     watch,
     formState: { errors },
-  } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
+  } = useForm<PackageFormData>({
+    resolver: zodResolver(packageSchema),
     defaultValues: {
       name: "",
       price: "",
-      quantity: "",
-      category_id: "",
-      subcategory_id: null,
     },
   });
-
-  const watchCategory = watch("category_id");
-
-  // Fetch subkategori jika category berubah
-  useEffect(() => {
-    if (watchCategory) {
-      getSubCategoriesbyCategory(watchCategory)
-        .then((data) => setSubcategories(data))
-        .catch((error) => {
-          console.error("Gagal Mengambil Sub Kategori", error);
-          setSubcategories([]);
-        });
-    } else {
-      setSubcategories([]);
-    }
-  }, [watchCategory]);
 
   // Fetch kategori saat modal terbuka
   useEffect(() => {
@@ -112,54 +86,39 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   // Isi default jika edit
   useEffect(() => {
-    if (initialProduct) {
+    if (initialPackage) {
       reset({
-        name: initialProduct.name,
-        price: initialProduct.price,
-        quantity: initialProduct.quantity ?? "",
-        category_id: initialProduct.category_id,
-        subcategory_id: initialProduct.subcategory_id || null,
-      });
-    } else if (initialCategoryId) {
-      reset({
-        name: "",
-        price: "",
-        quantity: "",
-        category_id: initialCategoryId,
-        subcategory_id: null,
+        name: initialPackage.name,
+        price: initialPackage.price,
       });
     } else {
       resetForm();
     }
-  }, [initialProduct, initialCategoryId, reset]);
+  }, [initialPackage, reset]);
 
   const resetForm = () => {
     reset({
       name: "",
       price: "",
-      quantity: "",
-      category_id: "",
-      subcategory_id: null,
     });
   };
 
-  const onSubmit = async (formData: ProductFormData) => {
+  const onSubmit = async (formData: PackageFormData) => {
     try {
       setLoading(true);
 
       const payload = {
         ...formData,
-        subcategory_id: formData.subcategory_id ?? null,
       };
 
-      if (initialProduct) {
-        const updatePayload: UpdateProductPayload = {
+      if (initialPackage) {
+        const updatePayload: UpdatePackagePayload = {
           ...payload,
-          id: initialProduct.id,
+          id: initialPackage.id,
         };
-        await updateProduct(updatePayload);
+        await updatePackage(updatePayload);
       } else {
-        await createProduct(payload);
+        await createPackage(payload);
       }
 
       resetForm();
@@ -171,7 +130,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         title: "Gagal Menyimpan",
         message: `${err}`,
       });
-      console.error("Gagal menyimpan produk:", err);
+      console.error("Gagal menyimpan paket:", err);
     } finally {
       setLoading(false);
     }
@@ -184,15 +143,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
           <IonButtons slot="start">
             <IonButton onClick={onDidDismiss}>Kembali</IonButton>
           </IonButtons>
-          <IonTitle>
-            {initialProduct ? "Edit Produk" : "Tambah Produk"}
-          </IonTitle>
+          <IonTitle>{initialPackage ? "Edit Paket" : "Tambah Paket"}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
         <form onSubmit={handleSubmit(onSubmit)}>
           <IonItem>
-            <IonLabel position="stacked">Nama Produk</IonLabel>
+            <IonLabel position="stacked">Nama Paket</IonLabel>
             <Controller
               control={control}
               name="name"
@@ -228,14 +185,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
             <p className="ion-text-error">{errors.price.message}</p>
           )}
 
-          {errors.quantity && (
-            <p className="ion-text-error">{errors.quantity.message}</p>
-          )}
-
           <IonButton expand="block" type="submit" disabled={loading}>
             {loading ? (
               <IonSpinner name="dots" />
-            ) : initialProduct ? (
+            ) : initialPackage ? (
               "Simpan Perubahan"
             ) : (
               "Simpan Barang Baru"
@@ -255,4 +208,4 @@ const ProductForm: React.FC<ProductFormProps> = ({
   );
 };
 
-export default ProductForm;
+export default PackageForm;

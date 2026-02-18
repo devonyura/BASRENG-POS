@@ -1,4 +1,4 @@
-import { Redirect, Route } from 'react-router-dom'
+import { Redirect, Route } from "react-router-dom";
 import {
   IonApp,
   IonIcon,
@@ -7,28 +7,34 @@ import {
   IonTabBar,
   IonTabButton,
   IonTabs,
-  setupIonicReact
-} from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router'
-import { images, square, receiptOutline, list, storefront } from 'ionicons/icons'
-import Tab2 from './pages/Tab2'
-import Tab3 from './pages/Tab3'
+  setupIonicReact,
+} from "@ionic/react";
+import { IonReactRouter } from "@ionic/react-router";
+import {
+  images,
+  square,
+  receiptOutline,
+  list,
+  storefront,
+} from "ionicons/icons";
+import Tab2 from "./pages/Tab2";
+import Tab3 from "./pages/Tab3";
 
 /* Core CSS required for Ionic components to work properly */
-import '@ionic/react/css/core.css'
+import "@ionic/react/css/core.css";
 
 /* Basic CSS for apps built with Ionic */
-import '@ionic/react/css/normalize.css'
-import '@ionic/react/css/structure.css'
-import '@ionic/react/css/typography.css'
+import "@ionic/react/css/normalize.css";
+import "@ionic/react/css/structure.css";
+import "@ionic/react/css/typography.css";
 
 /* Optional CSS utils that can be commented out */
-import '@ionic/react/css/padding.css'
-import '@ionic/react/css/float-elements.css'
-import '@ionic/react/css/text-alignment.css'
-import '@ionic/react/css/text-transformation.css'
-import '@ionic/react/css/flex-utils.css'
-import '@ionic/react/css/display.css'
+import "@ionic/react/css/padding.css";
+import "@ionic/react/css/float-elements.css";
+import "@ionic/react/css/text-alignment.css";
+import "@ionic/react/css/text-transformation.css";
+import "@ionic/react/css/flex-utils.css";
+import "@ionic/react/css/display.css";
 
 /**
  * Ionic Dark Mode
@@ -42,21 +48,22 @@ import '@ionic/react/css/display.css'
 // import '@ionic/react/css/palettes/dark.system.css'
 
 /* Theme variables */
-import './theme/variables.css'
-import StudentAdd from './pages/StudentAdd';
-import StudentEdit from './pages/StudentEdit';
+import "./theme/variables.css";
+import StudentAdd from "./pages/StudentAdd";
+import StudentEdit from "./pages/StudentEdit";
 
-import { StudentProvider } from './context/StudentContext'
-import LoginForm from './pages/LoginForm';
+import { StudentProvider } from "./context/StudentContext";
+import LoginForm from "./pages/LoginForm";
 import KasirPage from "./pages/kasir/KasirPage";
-import TransactionHistory from './pages/transaction_history/TransactionHistory';
-import Dashboard from './pages/dashboard/Dashboard';
-import ProductListPage from './pages/products/ProductListPage';
-import CategoryListPage from './pages/categories/CategoryListPage';
-import BranchListPage from './pages/branch/BranchListPage';
-import UsersListPage from './pages/users/UsersListPage';
-import ReportPage from './pages/reports/ReportPage';
-import ResellerListPage from './pages/resellers/ResellerListPage';
+import TransactionHistory from "./pages/transaction_history/TransactionHistory";
+import Dashboard from "./pages/dashboard/Dashboard";
+import ProductListPage from "./pages/products/ProductListPage";
+import CategoryListPage from "./pages/categories/CategoryListPage";
+import BranchListPage from "./pages/branch/BranchListPage";
+import UsersListPage from "./pages/users/UsersListPage";
+import ReportPage from "./pages/reports/ReportPage";
+import ResellerListPage from "./pages/resellers/ResellerListPage";
+import PackageListPage from "./pages/products/PackageListPage";
 
 setupIonicReact();
 
@@ -93,6 +100,9 @@ const App: React.FC = () => (
             <Route exact path={`/product-list`}>
               <ProductListPage />
             </Route>
+            <Route exact path={`/package-list`}>
+              <PackageListPage />
+            </Route>
             <Route exact path={`/categories`}>
               <CategoryListPage />
             </Route>
@@ -118,7 +128,10 @@ const App: React.FC = () => (
               <IonIcon aria-hidden="true" icon={receiptOutline} />
               <IonLabel>Kasir</IonLabel>
             </IonTabButton>
-            <IonTabButton tab="transaction-history" href={`/transaction-history`}>
+            <IonTabButton
+              tab="transaction-history"
+              href={`/transaction-history`}
+            >
               <IonIcon aria-hidden="true" icon={list} />
               <IonLabel>Riwayat Transaksi</IonLabel>
             </IonTabButton>

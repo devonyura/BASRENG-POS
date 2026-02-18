@@ -14,6 +14,8 @@ import {
   build,
   people,
   personCircleOutline,
+  arrowDownRightBox,
+  cubeOutline,
 } from "ionicons/icons";
 
 import { Roles } from "../hooks/useAuthCookie";
@@ -36,6 +38,14 @@ const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (
           <IonButton routerLink="/product-list" expand="block">
             <IonIcon icon={pricetagsOutline} slot="start" />
             Data Barang
+          </IonButton>
+        </IonMenuToggle>
+      )}
+      {role !== Roles.kasir && (
+        <IonMenuToggle>
+          <IonButton routerLink="/package-list" expand="block">
+            <IonIcon icon={cubeOutline} slot="start" />
+            Data Paket
           </IonButton>
         </IonMenuToggle>
       )}
