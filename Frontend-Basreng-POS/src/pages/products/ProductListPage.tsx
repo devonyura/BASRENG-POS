@@ -158,7 +158,7 @@ const ProductListPage: React.FC = () => {
                       expand="block"
                       onClick={() => handleAdd(category.id)}
                     >
-                      Tambah Barang
+                      Tambah {category.name}
                     </IonButton>
                     <IonList>
                       {categoryProducts.map((product) => (
