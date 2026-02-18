@@ -6,6 +6,7 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  descriptions: string;
   subtotal: number;
   weight_grams: number;
 }

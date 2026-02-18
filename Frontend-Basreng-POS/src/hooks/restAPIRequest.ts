@@ -13,6 +13,7 @@ export interface DataProduct {
 	id: string;
 	category_id: string;
 	subcategory_id: string;
+	descriptions: string;
 	name: string;
 	price: string;
 	weight_grams: string | number;

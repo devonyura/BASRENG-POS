@@ -9,8 +9,18 @@ import {
   IonCol,
   IonButton,
   IonIcon,
+  IonChip,
+  IonLabel,
 } from "@ionic/react";
-import { add, remove, trashBin } from "ionicons/icons";
+import {
+  add,
+  atCircleOutline,
+  checkbox,
+  checkmarkCircleOutline,
+  closeCircle,
+  remove,
+  trashBin,
+} from "ionicons/icons";
 import {
   rupiahFormat,
   formatProductName,
@@ -45,6 +55,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           name: product.name,
           price: Number(product.price),
           quantity: qty,
+          descriptions: product.descriptions,
           subtotal: Number(product.price),
           weight_grams: weightGrams,
         }),
@@ -79,6 +90,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </IonCardTitle>
         </IonCardHeader>
         <IonCardContent>
+          {product.descriptions && (
+            <div>
+              {product.descriptions.split(",").map((desc) => (
+                <IonChip outline>
+                  <IonIcon icon={checkmarkCircleOutline} color="success" />
+                  <IonLabel>{desc}</IonLabel>
+                </IonChip>
+              ))}
+            </div>
+          )}
           <div className="amount price">
             <p>
               Harga: <span>{rupiahFormat(product.price)}</span>
@@ -102,29 +123,31 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <IonIcon slot="icon-only" icon={trashBin}></IonIcon>
             </IonButton>
           </div>
-          <div className="amount">
-            <IonButton
-              shape="round"
-              size="small"
-              onClick={() => handleAutoSet(3)}
-            >
-              3
-            </IonButton>
-            <IonButton
-              shape="round"
-              size="small"
-              onClick={() => handleAutoSet(6)}
-            >
-              6
-            </IonButton>
-            <IonButton
-              shape="round"
-              size="small"
-              onClick={() => handleAutoSet(12)}
-            >
-              12
-            </IonButton>
-          </div>
+          {!product.descriptions && (
+            <div className="amount">
+              <IonButton
+                shape="round"
+                size="small"
+                onClick={() => handleAutoSet(3)}
+              >
+                3
+              </IonButton>
+              <IonButton
+                shape="round"
+                size="small"
+                onClick={() => handleAutoSet(6)}
+              >
+                6
+              </IonButton>
+              <IonButton
+                shape="round"
+                size="small"
+                onClick={() => handleAutoSet(12)}
+              >
+                12
+              </IonButton>
+            </div>
+          )}
           <div className="amount price">
             <p>
               Subtotal: <span>{rupiahFormat(subtotal)}</span>

@@ -39,6 +39,7 @@ interface ReceiptProps {
     id: string;
     name: string;
     price: number;
+    descriptions: string;
     quantity: number;
     weight_grams?: number;
   }[];
@@ -108,12 +109,20 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
         </thead>
         <tbody>
           {cartItems.map((item) => (
-            <tr key={item.id}>
-              <td>{formatProductName(item.name, item.weight_grams)}</td>
-              <td className="small-text">{item.quantity}x</td>
-              <td>{rupiahFormat(item.price, false)}</td>
-              <td>{rupiahFormat(item.price * item.quantity, false)}</td>
-            </tr>
+            <>
+              <tr key={item.id}>
+                <td>{formatProductName(item.name, item.weight_grams)}</td>
+                <td className="small-text">{item.quantity}x</td>
+                <td>{rupiahFormat(item.price, false)}</td>
+                <td>{rupiahFormat(item.price * item.quantity, false)}</td>
+              </tr>
+              {item.descriptions && (
+                <tr>
+                  <td>Isi paket</td>
+                  <td colSpan={3}>{item.descriptions}</td>
+                </tr>
+              )}
+            </>
           ))}
           {is_reseller && (
             <tr>

@@ -14,7 +14,6 @@ import {
   build,
   people,
   personCircleOutline,
-  arrowDownRightBox,
   cubeOutline,
 } from "ionicons/icons";
 
@@ -36,16 +35,8 @@ const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (
       {role !== Roles.kasir && (
         <IonMenuToggle>
           <IonButton routerLink="/product-list" expand="block">
-            <IonIcon icon={pricetagsOutline} slot="start" />
-            Data Barang
-          </IonButton>
-        </IonMenuToggle>
-      )}
-      {role !== Roles.kasir && (
-        <IonMenuToggle>
-          <IonButton routerLink="/package-list" expand="block">
             <IonIcon icon={cubeOutline} slot="start" />
-            Data Paket
+            Data Barang
           </IonButton>
         </IonMenuToggle>
       )}

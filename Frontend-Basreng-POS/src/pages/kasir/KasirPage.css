@@ -1,3 +1,7 @@
+* {
+  text-transform: capitalize;
+}
+
 h2 {
   text-align: center;
   font-weight: 600;
@@ -8,7 +12,7 @@ img {
 }
 
 ion-card-title {
-  font-size: 1.50rem;
+  font-size: 1.5rem;
   font-weight: 500;
   text-transform: capitalize;
 }
@@ -21,7 +25,6 @@ ion-card-title {
 ion-card-header {
   padding-bottom: 8px;
 }
-
 
 ion-card-header,
 ion-card-content {
