@@ -1,6 +1,5 @@
 /// <reference types="vitest" />
 
-import legacy from '@vitejs/plugin-legacy'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -32,7 +31,11 @@ export default defineConfig({
 	},
 	build: {
 		rollupOptions: {
-			output: {
+				output: {
+					manualChunks: {
+					vendor: ['react', 'react-dom'],
+					ionic: ['@ionic/react']
+				},
 				entryFileNames: `assets/[name]-[hash].js`,
 				chunkFileNames: `assets/[name]-[hash].js`,
 				assetFileNames: `assets/[name]-[hash].[ext]`
@@ -41,7 +44,6 @@ export default defineConfig({
 	},
 	plugins: [
 		react(),
-		legacy(),
 		VitePWA({
 			registerType: 'autoUpdate',
 			manifest: {
@@ -62,6 +64,9 @@ export default defineConfig({
 						type: 'image/png'
 					}
 				]
+			},
+			workbox: {
+				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5MB
 			}
 		})
 	],

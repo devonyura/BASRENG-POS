@@ -8,10 +8,10 @@ use CodeIgniter\Filters\FilterInterface;
 
 class CorsFilter implements FilterInterface
 {
-  public function before(RequestInterface $request, $arguments = null)
-  {
-    // Allowed origins (sesuaikan dengan domain React kamu)
-		$allowedOrigins = ['http://localhost:8100', 'https://app.rindapermai.com'];
+	public function before(RequestInterface $request, $arguments = null)
+	{
+		// Allowed origins (sesuaikan dengan domain React kamu)
+		$allowedOrigins = ['http://localhost:8100', 'http://localhost:4173', 'https://app.rindapermai.com'];
 
 		$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
 
@@ -28,10 +28,10 @@ class CorsFilter implements FilterInterface
 			header("HTTP/1.1 200 OK");
 			exit();
 		}
-  }
+	}
 
-  public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
-  {
-    return $response;
-  }
+	public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
+	{
+		return $response;
+	}
 }

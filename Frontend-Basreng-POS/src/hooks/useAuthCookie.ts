@@ -33,7 +33,7 @@ const getStoredBranchData = (): BranchData | null => {
 
 export const useAuth = () => {
   const [token, setToken] = useState(Cookies.get("token") || null);
-  const [role, setRole] = useState(Cookies.get("role") || null);
+  const [role, setRole] = useState(Cookies.get("role") || Roles);
   const [branchID, setBranchID] = useState(Cookies.get("branch_id") || null);
   const [branchData, setBranchData] = useState<BranchData | null>(getStoredBranchData());
   const [username, setUsername] = useState(Cookies.get("username") || null);
@@ -83,7 +83,7 @@ export const useAuth = () => {
     Cookies.remove("username");
     Cookies.remove("id_user");
     setToken(null);
-    setRole(null);
+    setRole( typeof Roles);
     setBranchID(null);
     setBranchData(null);
     setUsername(null);

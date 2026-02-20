@@ -21,7 +21,7 @@ import { Roles } from "../hooks/useAuthCookie";
 
 interface DashboardMenuProps {
   onLogout: () => void;
-  role: Roles;
+  role: string | typeof Roles;
 }
 
 const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (

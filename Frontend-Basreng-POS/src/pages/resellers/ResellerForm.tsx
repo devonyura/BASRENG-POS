@@ -11,18 +11,18 @@ import {
   IonLabel,
   IonSpinner,
   IonAlert,
-  IonTextarea
-} from '@ionic/react';
-import { useEffect, useState } from 'react';
+  IonTextarea,
+} from "@ionic/react";
+import { useEffect, useState } from "react";
 import {
   createReseller,
   updateReseller,
-  ResellerPayload
-} from '../../hooks/restAPIResellers';
-import { useForm, Controller } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertMessageProps } from '../products/ProductForm';
+  ResellerPayload,
+} from "../../hooks/restAPIResellers";
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { AlertMessageProps } from "../products/ProductForm";
 
 interface ResellerFormProps {
   isOpen: boolean;
@@ -32,9 +32,9 @@ interface ResellerFormProps {
 }
 
 const resellerSchema = z.object({
-  name: z.string().min(3, 'Nama reseller harus diisi'),
+  name: z.string().min(3, "Nama reseller harus diisi"),
   phone: z.string().optional(),
-  address: z.string().optional()
+  address: z.string().optional(),
 });
 
 type ResellerFormData = z.infer<typeof resellerSchema>;
@@ -43,12 +43,12 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
   isOpen,
   onDidDismiss,
   onSuccess,
-  initialReseller
+  initialReseller,
 }) => {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({
-    title: '',
-    message: ''
+    title: "",
+    message: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -56,28 +56,28 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
     control,
     handleSubmit,
     reset,
-    formState: { errors }
+    formState: { errors },
   } = useForm<ResellerFormData>({
     resolver: zodResolver(resellerSchema),
     defaultValues: {
-      name: '',
-      phone: '',
-      address: ''
-    }
+      name: "",
+      phone: "",
+      address: "",
+    },
   });
 
   useEffect(() => {
     if (initialReseller) {
       reset({
-        name: initialReseller.name ?? '',
-        phone: initialReseller.phone ?? '',
-        address: initialReseller.address ?? ''
+        name: initialReseller.name ?? "",
+        phone: initialReseller.phone ?? "",
+        address: initialReseller.address ?? "",
       });
     } else {
       reset({
-        name: '',
-        phone: '',
-        address: ''
+        name: "",
+        phone: "",
+        address: "",
       });
     }
   }, [initialReseller, reset]);
@@ -87,8 +87,8 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
       setLoading(true);
       const payload: ResellerPayload = {
         name: formData.name,
-        phone: formData.phone || null,
-        address: formData.address || null
+        phone: formData.phone,
+        address: formData.address,
       };
 
       if (initialReseller) {
@@ -102,10 +102,10 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
     } catch (err) {
       setShowAlert(true);
       setAlertMessage({
-        title: 'Gagal Menyimpan',
-        message: `${err}`
+        title: "Gagal Menyimpan",
+        message: `${err}`,
       });
-      console.error('Gagal menyimpan reseller:', err);
+      console.error("Gagal menyimpan reseller:", err);
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,9 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
           <IonButtons slot="start">
             <IonButton onClick={onDidDismiss}>Kembali</IonButton>
           </IonButtons>
-          <IonTitle>{initialReseller ? 'Edit Reseller' : 'Tambah Reseller'}</IonTitle>
+          <IonTitle>
+            {initialReseller ? "Edit Reseller" : "Tambah Reseller"}
+          </IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
@@ -129,11 +131,17 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
               control={control}
               name="name"
               render={({ field }) => (
-                <IonInput {...field} value={field.value} onIonChange={e => field.onChange(e.detail.value!)} />
+                <IonInput
+                  {...field}
+                  value={field.value}
+                  onIonChange={(e) => field.onChange(e.detail.value!)}
+                />
               )}
             />
           </IonItem>
-          {errors.name && <p className="ion-text-error">{errors.name.message}</p>}
+          {errors.name && (
+            <p className="ion-text-error">{errors.name.message}</p>
+          )}
 
           <IonItem>
             <IonLabel position="stacked">Nomor HP</IonLabel>
@@ -141,7 +149,11 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
               control={control}
               name="phone"
               render={({ field }) => (
-                <IonInput {...field} value={field.value} onIonChange={e => field.onChange(e.detail.value!)} />
+                <IonInput
+                  {...field}
+                  value={field.value}
+                  onIonChange={(e) => field.onChange(e.detail.value!)}
+                />
               )}
             />
           </IonItem>
@@ -152,13 +164,23 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
               control={control}
               name="address"
               render={({ field }) => (
-                <IonTextarea {...field} value={field.value} onIonChange={e => field.onChange(e.detail.value!)} />
+                <IonTextarea
+                  {...field}
+                  value={field.value}
+                  onIonChange={(e) => field.onChange(e.detail.value!)}
+                />
               )}
             />
           </IonItem>
 
           <IonButton expand="block" type="submit" disabled={loading}>
-            {loading ? <IonSpinner name="dots" /> : initialReseller ? 'Simpan Perubahan' : 'Simpan Reseller Baru'}
+            {loading ? (
+              <IonSpinner name="dots" />
+            ) : initialReseller ? (
+              "Simpan Perubahan"
+            ) : (
+              "Simpan Reseller Baru"
+            )}
           </IonButton>
         </form>
 
@@ -167,7 +189,7 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
           onDidDismiss={() => setShowAlert(false)}
           header={alertMessage.title}
           message={alertMessage.message}
-          buttons={[{ text: 'OK', role: 'cancel' }]}
+          buttons={[{ text: "OK", role: "cancel" }]}
         />
       </IonContent>
     </IonModal>

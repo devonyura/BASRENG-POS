@@ -43,6 +43,10 @@ export interface TransactionDetailItem {
   quantity: string;
   price: string;
   subtotal: string;
+  id: string;
+  name: string;
+  descriptions: string;
+  weight_grams?: number;
 }
 
 export interface Transaction {
@@ -182,6 +186,7 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
                 id: item.product_id, // ✅ ganti dari product_id -> id
                 name: item.product_name, // ✅ ganti dari product_name -> name
                 price: Number(item.price),
+                descriptions: item.descriptions,
                 quantity: Number(item.quantity),
               }))}
               receiptNoteNumber={transactionData.transactions.transaction_code}

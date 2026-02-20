@@ -11,7 +11,7 @@
     "test.unit": "vitest",
     "lint": "eslint"
   },
-  "proxy": "http://localhost:8080",
+  "proxy": "https://app.basrenghosting.biz.id/",
   "dependencies": {
     "@capacitor/app": "7.0.0",
     "@capacitor/camera": "^7.0.0",
