@@ -12,13 +12,6 @@ interface BranchData {
   branch_address?: string;
 }
 
-export enum Roles {
-  admin = "admin",
-  owner = "owner",
-  manager = "manager",
-  kasir = "kasir"
-}
-
 const getStoredBranchData = (): BranchData | null => {
   const stored = Cookies.get("branch_data");
   if (!stored) return null;
@@ -33,7 +26,7 @@ const getStoredBranchData = (): BranchData | null => {
 
 export const useAuth = () => {
   const [token, setToken] = useState(Cookies.get("token") || null);
-  const [role, setRole] = useState(Cookies.get("role") || Roles);
+  const [role, setRole] = useState(Cookies.get("role") || null);
   const [branchID, setBranchID] = useState(Cookies.get("branch_id") || null);
   const [branchData, setBranchData] = useState<BranchData | null>(getStoredBranchData());
   const [username, setUsername] = useState(Cookies.get("username") || null);
@@ -83,7 +76,7 @@ export const useAuth = () => {
     Cookies.remove("username");
     Cookies.remove("id_user");
     setToken(null);
-    setRole( typeof Roles);
+    setRole( null);
     setBranchID(null);
     setBranchData(null);
     setUsername(null);

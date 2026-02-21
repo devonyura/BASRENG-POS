@@ -1,6 +1,6 @@
 import React from "react";
 import Cookies from "js-cookie";
-// const BASE_API_URL = "https://api.rindapermai.com"
+// export const BASE_API_URL = "https://restapi.basrenghosting.biz.id"
 export const BASE_API_URL = "http://localhost:8080"
 
 export interface ApiResponse {

@@ -17,22 +17,20 @@ import {
   cubeOutline,
 } from "ionicons/icons";
 
-import { Roles } from "../hooks/useAuthCookie";
-
 interface DashboardMenuProps {
   onLogout: () => void;
-  role: string | typeof Roles;
+  role: string | null;
 }
 
 const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (
   <IonMenu contentId="main-content">
     <IonHeader>
       <IonToolbar>
-        <IonTitle>Admin Menu</IonTitle>
+        <IonTitle>{`Admin Menu ${role ?? ""}`}</IonTitle>
       </IonToolbar>
     </IonHeader>
     <IonContent className="ion-padding">
-      {role !== Roles.kasir && (
+      {role !== "kasir" && (
         <IonMenuToggle>
           <IonButton routerLink="/product-list" expand="block">
             <IonIcon icon={cubeOutline} slot="start" />
@@ -40,7 +38,7 @@ const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (
           </IonButton>
         </IonMenuToggle>
       )}
-      {role !== Roles.kasir && (
+      {role !== "kasir" && (
         <IonMenuToggle>
           <IonButton routerLink="/categories" expand="block">
             <IonIcon icon={pricetagsOutline} slot="start" />
@@ -48,7 +46,7 @@ const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (
           </IonButton>
         </IonMenuToggle>
       )}
-      {role === Roles.admin && (
+      {role === "admin" && (
         <IonMenuToggle>
           <IonButton routerLink="/branch" expand="block">
             <IonIcon icon={build} slot="start" />
@@ -56,7 +54,7 @@ const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (
           </IonButton>
         </IonMenuToggle>
       )}
-      {role === Roles.admin && (
+      {role === "admin" && (
         <IonMenuToggle>
           <IonButton routerLink="/users" expand="block">
             <IonIcon icon={people} slot="start" />
@@ -64,7 +62,7 @@ const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (
           </IonButton>
         </IonMenuToggle>
       )}
-      {role !== Roles.kasir && (
+      {role !== "kasir" && (
         <IonMenuToggle>
           <IonButton routerLink="/resellers" expand="block">
             <IonIcon icon={personCircleOutline} slot="start" />
@@ -72,7 +70,7 @@ const DashboardMenu: React.FC<DashboardMenuProps> = ({ onLogout, role }) => (
           </IonButton>
         </IonMenuToggle>
       )}
-      {role !== Roles.kasir && (
+      {role !== "kasir" && (
         <IonMenuToggle>
           <IonButton routerLink="/report" expand="block">
             <IonIcon icon={people} slot="start" />

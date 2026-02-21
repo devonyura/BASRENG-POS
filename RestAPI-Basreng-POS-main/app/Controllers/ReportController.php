@@ -262,45 +262,90 @@ class ReportController extends ResourceController
 
 
 
+  private function getUserByUsername($username)
+  {
+    $db = \Config\Database::connect();
 
-  // GET /api/report/summary
+    return $db->table('users')
+      ->where('username', $username)
+      ->get()
+      ->getRow();
+  }
+
+  private function generateSummary($user = null)
+  {
+    $db = \Config\Database::connect();
+
+    $today = date('Y-m-d');
+    $monday = date('Y-m-d', strtotime('monday this week'));
+    $monthStart = date('Y-m-01');
+
+    // Closure builder supaya bersih tiap query
+    $createBuilder = function () use ($db, $user) {
+      $builder = $db->table('transactions t');
+
+      if ($user) {
+        $builder->where('t.user_id', $user->id);
+      }
+
+      return $builder;
+    };
+
+    // ================= HARI INI =================
+    $todaySales = $createBuilder()
+      ->selectSum('t.total_price')
+      ->where('DATE(t.date_time)', $today)
+      ->get()->getRow()->total_price ?? 0;
+
+    $todayCount = $createBuilder()
+      ->selectCount('t.id')
+      ->where('DATE(t.date_time)', $today)
+      ->get()->getRow()->id ?? 0;
+
+    // ================= MINGGU INI =================
+    $weekSales = $createBuilder()
+      ->selectSum('t.total_price')
+      ->where("DATE(t.date_time) BETWEEN '$monday' AND '$today'")
+      ->get()->getRow()->total_price ?? 0;
+
+    // ================= BULAN INI =================
+    $monthSales = $createBuilder()
+      ->selectSum('t.total_price')
+      ->where("DATE(t.date_time) BETWEEN '$monthStart' AND '$today'")
+      ->get()->getRow()->total_price ?? 0;
+
+    return [
+      'hari_ini' => (int)$todaySales,
+      'minggu_ini' => (int)$weekSales,
+      'bulan_ini' => (int)$monthSales,
+      'jumlah_transaksi_hari_ini' => (int)$todayCount,
+    ];
+  }
+
+  // GET /api/report/summary?username=john
   public function summary()
   {
     try {
-      $db = \Config\Database::connect();
+      $username = $this->request->getGet('username');
+      $user = null;
 
-      // Hari ini
-      $today = date('Y-m-d');
-      $builder = $db->table('transactions');
-      $todaySales = $builder->selectSum('total_price')
-        ->where('DATE(date_time)', $today)
-        ->get()->getRow()->total_price ?? 0;
-      $todayCount = $builder->selectCount('id')
-        ->where('DATE(date_time)', $today)
-        ->get()->getRow()->id ?? 0;
+      if (!empty($username) && $username !== "admin" && $username !== "owner") {
+        $user = $this->getUserByUsername($username);
+        if (!$user) {
+          return $this->failNotFound('User tidak ditemukan');
+        }
+      }
 
-      // Minggu ini (Senin s/d hari ini)
-      $monday = date('Y-m-d', strtotime('monday this week'));
-      $weekSales = $builder->selectSum('total_price')
-        ->where("DATE(date_time) BETWEEN '$monday' AND '$today'")
-        ->get()->getRow()->total_price ?? 0;
-
-      // Bulan ini
-      $monthStart = date('Y-m-01');
-      $monthSales = $builder->selectSum('total_price')
-        ->where("DATE(date_time) BETWEEN '$monthStart' AND '$today'")
-        ->get()->getRow()->total_price ?? 0;
+      $data = $this->generateSummary($user);
 
       return $this->respond([
         'status' => 'success',
-        'data' => [
-          'hari_ini' => (int)$todaySales,
-          'minggu_ini' => (int)$weekSales,
-          'bulan_ini' => (int)$monthSales,
-          'jumlah_transaksi_hari_ini' => (int)$todayCount,
-        ]
+        'filter' => [
+          'username' => $username
+        ],
+        'data' => $data
       ]);
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
       return $this->failServerError($e->getMessage());
     }
   }
