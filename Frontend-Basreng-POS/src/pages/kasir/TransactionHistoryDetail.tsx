@@ -26,7 +26,7 @@ import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
 import { OverlayEventDetail } from "@ionic/core/components";
-import Receipt, { BranchData } from "../../components/Receipt";
+import Receipt, { BranchData } from "../../components/ReceiptHistory";
 
 import React from "react";
 
@@ -53,6 +53,7 @@ export interface Transaction {
   id: string;
   transaction_code: string;
   user_id: string;
+  username: string;
   branch_id: string;
   date_time: string;
   total_price: string;
@@ -169,6 +170,7 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
         <IonContent className="ion-padding">
           {transactionData && (
             <Receipt
+              username={transactionData.transactions.username}
               ref={receiptRef}
               cash={Number(transactionData.transactions.cash_amount)}
               change={Number(transactionData.transactions.change_amount)}

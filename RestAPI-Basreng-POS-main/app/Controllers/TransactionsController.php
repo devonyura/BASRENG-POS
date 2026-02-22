@@ -333,7 +333,11 @@ class TransactionsController extends ResourceController
 
       $db = \Config\Database::connect();
       $builder = $db->table('transactions');
-      $builder->select('*');
+      $builder->select('
+      *,
+      users.username AS username
+      ');
+      $builder->join('users', 'users.id = transactions.user_id', 'left');
       $builder->where('transaction_code', $transactions_code);
       $transaction = $builder->get()->getRowArray();
 

@@ -89,7 +89,7 @@ const Dashboard: React.FC = () => {
     setLoadingChart(true);
     try {
       try {
-        const summaryData = await getTransactionSummary(username);
+        const summaryData = await getTransactionSummary();
         setSummary(summaryData);
         console.log(summaryData);
       } catch (e) {

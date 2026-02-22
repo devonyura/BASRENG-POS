@@ -25,6 +25,7 @@ interface ReceiptProps {
   // branch: string[];
   // cashierName: string;
   // receiptNumber: string;
+  username: string;
   cash: number;
   change: number;
   total: number;
@@ -58,6 +59,7 @@ export interface BranchData {
 
 const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
   const {
+    username,
     cash,
     change,
     total,
@@ -71,7 +73,7 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
     shopeeCode,
   } = props;
 
-  const { username, branchData } = useAuth();
+  const { branchData } = useAuth();
   console.log("Detail Transaction:", props);
 
   // const [branchDataState] = useState<BranchData | null>(branchData);

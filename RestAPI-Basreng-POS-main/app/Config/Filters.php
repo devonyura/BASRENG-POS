@@ -38,6 +38,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'auth'          => AuthFilter::class,
         'corsfilter'    => CorsFilter::class,
+        'jwtAuth' => \App\Filters\JwtAuth::class,
     ];
 
     /**

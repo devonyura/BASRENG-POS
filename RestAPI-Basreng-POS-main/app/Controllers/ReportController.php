@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use CodeIgniter\RESTful\ResourceController;
 use Exception;
+use App\Helpers\JwtHelper;
 
 class ReportController extends ResourceController
 {
@@ -260,19 +261,7 @@ class ReportController extends ResourceController
   }
 
 
-
-
-  private function getUserByUsername($username)
-  {
-    $db = \Config\Database::connect();
-
-    return $db->table('users')
-      ->where('username', $username)
-      ->get()
-      ->getRow();
-  }
-
-  private function generateSummary($user = null)
+  private function generateSummary($user, $shouldFilter = false)
   {
     $db = \Config\Database::connect();
 
@@ -280,18 +269,16 @@ class ReportController extends ResourceController
     $monday = date('Y-m-d', strtotime('monday this week'));
     $monthStart = date('Y-m-01');
 
-    // Closure builder supaya bersih tiap query
-    $createBuilder = function () use ($db, $user) {
+    $createBuilder = function () use ($db, $user, $shouldFilter) {
       $builder = $db->table('transactions t');
 
-      if ($user) {
-        $builder->where('t.user_id', $user->id);
+      if ($shouldFilter) {
+        $builder->where('t.user_id', $user['id']);
       }
 
       return $builder;
     };
 
-    // ================= HARI INI =================
     $todaySales = $createBuilder()
       ->selectSum('t.total_price')
       ->where('DATE(t.date_time)', $today)
@@ -302,13 +289,11 @@ class ReportController extends ResourceController
       ->where('DATE(t.date_time)', $today)
       ->get()->getRow()->id ?? 0;
 
-    // ================= MINGGU INI =================
     $weekSales = $createBuilder()
       ->selectSum('t.total_price')
       ->where("DATE(t.date_time) BETWEEN '$monday' AND '$today'")
       ->get()->getRow()->total_price ?? 0;
 
-    // ================= BULAN INI =================
     $monthSales = $createBuilder()
       ->selectSum('t.total_price')
       ->where("DATE(t.date_time) BETWEEN '$monthStart' AND '$today'")
@@ -326,22 +311,26 @@ class ReportController extends ResourceController
   public function summary()
   {
     try {
-      $username = $this->request->getGet('username');
-      $user = null;
+      // Ambil user dari JWT (bukan dari query param)
+      $authUser = JwtHelper::getUserFromRequest($this->request);
+      // dd($authUser['username'+);
 
-      if (!empty($username) && $username !== "admin" && $username !== "owner") {
-        $user = $this->getUserByUsername($username);
-        if (!$user) {
-          return $this->failNotFound('User tidak ditemukan');
-        }
+      if (!$authUser) {
+        return $this->failUnauthorized('Unauthorized');
       }
 
-      $data = $this->generateSummary($user);
+      // Filter hanya jika bukan admin atau owner
+      $shouldFilter = !in_array($authUser['role'], ['admin', 'owner']);
+      // dd($authUser['role']);
+
+      $data = $this->generateSummary($authUser, $shouldFilter);
 
       return $this->respond([
         'status' => 'success',
-        'filter' => [
-          'username' => $username
+        'user' => [
+          'id' => $authUser['id'],
+          'username' => $authUser['username'],
+          'role' => $authUser['role'],
         ],
         'data' => $data
       ]);
@@ -349,7 +338,6 @@ class ReportController extends ResourceController
       return $this->failServerError($e->getMessage());
     }
   }
-
   // GET /api/report/top-selling
   public function topSelling($day = 0)
   {

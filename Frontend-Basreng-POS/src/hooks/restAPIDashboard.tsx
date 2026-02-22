@@ -37,15 +37,15 @@ export interface ProductCategorySummary {
 // =============================
 // Fetch Ringkasan Penjualan
 // =============================
-export const getTransactionSummary = async (
-  username: string | null,
-): Promise<TransactionSummary | any> => {
+export const getTransactionSummary = async (): Promise<
+  TransactionSummary | any
+> => {
   try {
     const TOKEN = Cookies.get("token");
     const apiOnline = await isApiOnline();
     if (!apiOnline) throw new Error("Tidak dapat terhubung ke server.");
 
-    const url = `${BASE_API_URL}/api/report/summary?username=${username}`;
+    const url = `${BASE_API_URL}/api/report/summary`;
     const response = await fetch(url, {
       method: "GET",
       credentials: "include",

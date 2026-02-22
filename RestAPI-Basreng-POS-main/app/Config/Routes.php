@@ -15,6 +15,10 @@ $routes->group('api/auth', function ($routes) {
   $routes->post('register', 'AuthController::register');
 });
 
+$routes->group('api', ['filter' => 'jwtAuth'], function ($routes) {
+  $routes->get('report/summary', 'ReportController::summary');
+});
+
 $routes->group('api', ['filter' => 'auth'], function ($routes) {
   // Reports endpoint
   // $routes->post('reports/sales', 'ReportsController::sales');

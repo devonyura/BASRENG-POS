@@ -5,33 +5,18 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
-  IonSegment,
   IonIcon,
   IonLabel,
-  IonSegmentButton,
-  IonSegmentContent,
-  IonSegmentView,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonCol,
-  IonGrid,
-  IonRow,
   IonSearchbar,
   IonList,
   IonItem,
   IonModal,
-  IonItemSliding,
-  IonItemOption,
-  IonItemOptions,
   useIonViewWillEnter,
   IonAlert,
 } from "@ionic/react";
-import { time, people, location } from "ionicons/icons";
+import { time, location } from "ionicons/icons";
 
 import { useState, useRef, useEffect } from "react";
-import { useHistory, useLocation } from "react-router-dom";
 import {
   getTransactionHistory,
   findTransactionHistory,
@@ -44,6 +29,7 @@ import Receipt from "../../components/Receipt";
 
 import dayjs from "dayjs";
 import TransactionHistoryDetail from "../kasir/TransactionHistoryDetail";
+import { useAuth } from "../../hooks/useAuthCookie";
 
 const TransactionHistory: React.FC = () => {
   const modalDetail = useRef<HTMLIonModalElement>(null);
@@ -56,6 +42,7 @@ const TransactionHistory: React.FC = () => {
     name: string;
   }>({ id: "", name: "Semua Cabang" });
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>("today");
+  const { logout, role, username, branchData, branchID } = useAuth();
 
   const [showKasirAlert, setShowKasirAlert] = useState(false);
   const [showBranchAlert, setShowBranchAlert] = useState(false);
@@ -74,9 +61,10 @@ const TransactionHistory: React.FC = () => {
 
   const kasirs = [
     { id: "", name: "Semua Kasir" },
-    { id: 1, name: "ila" },
-    { id: 2, name: "admin" },
-    { id: 3, name: "kasir" },
+    { id: 1, name: "admin" },
+    { id: 2, name: "syakira" },
+    { id: 3, name: "manager" },
+    { id: 4, name: "tiara" },
   ];
 
   // setup Alert
@@ -88,6 +76,8 @@ const TransactionHistory: React.FC = () => {
   });
 
   const LoadData = async () => {
+    console.log("Role:", role);
+    console.log("BranchID:", branchID);
     try {
       let startDate: string | undefined;
       let endDate: string = dayjs().format("YYYY-MM-DD");
@@ -133,6 +123,7 @@ const TransactionHistory: React.FC = () => {
         end_date: endDate,
       });
       setTransactionsHistory(result);
+      // setSelectedBranch();
     } catch (err) {
       console.error("Gagal memuat riwayat transaksi", err);
     }
@@ -145,7 +136,7 @@ const TransactionHistory: React.FC = () => {
 
   const getTransactionDetail = async () => {
     const TransactionDetails = await findTransactionHistory(
-      "C2-041025-102243-KASIR"
+      "C2-041025-102243-KASIR",
     );
     // const TransactionDetails = await findTransactionHistory('C1-070525-140316-ADMIN')
     console.log(TransactionDetails);
