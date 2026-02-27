@@ -21,28 +21,47 @@ import {
   getTransactionHistory,
   findTransactionHistory,
 } from "../../hooks/restAPIRequest";
-// import { useAuth } from "../../hooks/useAuthCookie";
-import AlertInfo, { AlertState } from "../../components/AlertInfo";
+
+import { getUsers } from "../../hooks/restAPIUsers";
+import { getBranches } from "../../hooks/restAPIBranch";
+
+import { AlertState } from "../../components/AlertInfo";
 import "./TransactionHistory.css";
 import { rupiahFormat, shortDate } from "../../hooks/formatting";
-import Receipt from "../../components/Receipt";
 
 import dayjs from "dayjs";
 import TransactionHistoryDetail from "../kasir/TransactionHistoryDetail";
-import { useAuth } from "../../hooks/useAuthCookie";
+import { useAuth } from "../../context/AuthContext";
+
+export interface Branch {
+  branch_id: string;
+  branch_name: string;
+  branch_address: string;
+  created_at: string;
+}
+
+export type UserRole = "admin" | "owner" | "manager" | "kasir";
+
+export interface User {
+  id: string;
+  username: string;
+  branch_id: string;
+  role: UserRole;
+  created_at: string;
+}
 
 const TransactionHistory: React.FC = () => {
   const modalDetail = useRef<HTMLIonModalElement>(null);
   const [kasirUsername, setKasirUsername] = useState<{
-    id: string | number;
-    name: string;
-  }>({ id: "", name: "Semua Kasir" });
+    id: string | null;
+    username: string | null;
+  }>({ id: "", username: "Semua Kasir" });
   const [selectedBranch, setSelectedBranch] = useState<{
-    id: string | number;
-    name: string;
-  }>({ id: "", name: "Semua Cabang" });
+    branch_id: string | null;
+    branch_name: string;
+  }>({ branch_id: "", branch_name: "Semua Cabang" });
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>("today");
-  const { logout, role, username, branchData, branchID } = useAuth();
+  const { idUser, role, username, branchData, branchID } = useAuth();
 
   const [showKasirAlert, setShowKasirAlert] = useState(false);
   const [showBranchAlert, setShowBranchAlert] = useState(false);
@@ -53,20 +72,47 @@ const TransactionHistory: React.FC = () => {
     string | null
   >(null);
 
-  const branches = [
-    { id: "", name: "Semua Cabang" },
-    { id: 1, name: "Masjid Raya" },
-    { id: 2, name: "Veteran" },
-  ];
+  // ============= State for keep Branch & Users data
+  const [branchList, setBranchList] = useState<Branch[]>([]);
+  const [usersList, setUsersList] = useState<User[]>([]);
 
-  const kasirs = [
-    { id: "", name: "Semua Kasir" },
-    { id: 1, name: "admin" },
-    { id: 2, name: "syakira" },
-    { id: 3, name: "manager" },
-    { id: 4, name: "tiara" },
-  ];
+  // ============= previlage filters sen, 23 feb 2026
+  const isAdminRole = ["admin", "owner", "manager"].includes(role);
+  const isKasirRole = role === "kasir";
 
+  const filteredBranches = isKasirRole
+    ? branchList.filter((b) => b.branch_id === String(branchID))
+    : branchList;
+
+  useEffect(() => {
+    if (!role) return; // tunggu auth siap
+
+    if (role === "kasir") {
+      setSelectedDateFilter("today");
+
+      setSelectedBranch({
+        branch_id: branchID,
+        branch_name: branchData?.branch_name || "Cabang Saya",
+      });
+
+      setKasirUsername({
+        id: idUser,
+        username: username,
+      });
+    }
+  }, [role, branchID, branchData, idUser, username]);
+
+  // const filteredUsers = isKasirRole
+  //   ? usersList.filter(
+  //       (k) => k.name === username, // hanya dirinya sendiri
+  //     )
+  //   : usersList;
+
+  const filteredUsers = isKasirRole
+    ? usersList.filter(
+        (u) => u.role === "kasir" && u.branch_id === String(branchID),
+      )
+    : usersList.filter((u) => u.role === "kasir");
   // setup Alert
   const [alert, setAlert] = useState<AlertState>({
     showAlert: false,
@@ -115,36 +161,55 @@ const TransactionHistory: React.FC = () => {
 
       const result = await getTransactionHistory({
         username:
-          kasirUsername.name === "Semua Kasir" ? "" : kasirUsername.name,
-        branch: selectedBranch.id
-          ? parseInt(String(selectedBranch.id))
+          kasirUsername.username === "Semua Kasir"
+            ? ""
+            : kasirUsername.username,
+        branch: selectedBranch.branch_id
+          ? parseInt(String(selectedBranch.branch_id))
           : undefined,
         start_date: startDate,
         end_date: endDate,
       });
       setTransactionsHistory(result);
       // setSelectedBranch();
+
+      // ================ Load data akun dan cabang
+      // const branches = await getBranches();
+      // const users = await getUsers();
+      // console.log("Branch:", branches);
+      // console.log("Users:", users);
+
+      // apa selanjutnya....
+      // setBranchList(branches);
+      // setUsersList(users);
     } catch (err) {
       console.error("Gagal memuat riwayat transaksi", err);
     }
   };
 
-  useIonViewWillEnter(() => {
-    LoadData();
-    getTransactionDetail();
-  });
+  const loadMasterData = async () => {
+    const branches: Branch[] = await getBranches();
+    const users: User[] = await getUsers();
 
-  const getTransactionDetail = async () => {
-    const TransactionDetails = await findTransactionHistory(
-      "C2-041025-102243-KASIR",
-    );
-    // const TransactionDetails = await findTransactionHistory('C1-070525-140316-ADMIN')
-    console.log(TransactionDetails);
+    setBranchList(branches);
+    setUsersList(users);
   };
 
-  useEffect(() => {
+  useIonViewWillEnter(() => {
     LoadData();
-  }, [kasirUsername, selectedBranch, selectedDateFilter]);
+  });
+
+  useEffect(() => {
+    if (!role) return;
+
+    loadMasterData();
+  }, [role]);
+
+  useEffect(() => {
+    if (!role) return;
+
+    LoadData();
+  }, [kasirUsername, selectedBranch, selectedDateFilter, role]);
 
   const getDateFilterLabel = (filter: string): string => {
     if (filter === "today") return "Hari Ini";
@@ -155,7 +220,7 @@ const TransactionHistory: React.FC = () => {
     }
     return "Filter Tanggal";
   };
-
+  if (!role) return null;
   return (
     <IonPage>
       <IonHeader>
@@ -166,27 +231,34 @@ const TransactionHistory: React.FC = () => {
           <IonSearchbar placeholder="Cari Transaksi"></IonSearchbar>
         </IonToolbar>
         <IonToolbar className="filter-container">
+          {/* Select by day */}
           <IonButton
             size="small"
             color="medium"
+            disabled={!isAdminRole}
             onClick={() => setShowDateFilterAlert(true)}
           >
             <IonIcon icon={time} size="small" />
             <span> {getDateFilterLabel(selectedDateFilter)}</span>
           </IonButton>
+          {/* Select Username/kasir */}
           <IonButton
             size="small"
             color="medium"
+            disabled={!isAdminRole && !isKasirRole}
             onClick={() => setShowKasirAlert(true)}
           >
-            Kasir : {kasirUsername.name}
+            Kasir : {kasirUsername.username}
           </IonButton>
+          {/* Select Branch/cabang */}
           <IonButton
             size="small"
             color="medium"
+            disabled={!isAdminRole}
             onClick={() => setShowBranchAlert(true)}
           >
-            <IonIcon icon={location} size="small" /> : {selectedBranch.name}
+            <IonIcon icon={location} size="small" /> :{" "}
+            {selectedBranch.branch_name}
           </IonButton>
         </IonToolbar>
       </IonHeader>
@@ -228,6 +300,8 @@ const TransactionHistory: React.FC = () => {
         isOpen={!!selectedTransactionCode}
         onDidDismiss={() => setSelectedTransactionCode(null)}
       />
+
+      {/* Select Username/kasir */}
       <IonAlert
         isOpen={showKasirAlert}
         onDidDismiss={() => setShowKasirAlert(false)}
@@ -240,20 +314,25 @@ const TransactionHistory: React.FC = () => {
           {
             text: "Pilih",
             handler: (selectedName: string) => {
-              const kasir = kasirs.find((k) => k.name === selectedName);
+              const kasir = usersList.find((k) => k.username === selectedName);
               if (kasir) {
-                setKasirUsername(kasir);
+                setKasirUsername({
+                  id: kasir.id,
+                  username: kasir.username,
+                });
               }
             },
           },
         ]}
-        inputs={kasirs.map((kasir) => ({
-          label: kasir.name,
+        inputs={filteredUsers.map((kasir) => ({
+          label: kasir.username,
           type: "radio",
-          value: kasir.name,
-          checked: kasir.name === kasirUsername.name,
+          value: kasir.username,
+          checked: kasir.username === kasirUsername.username,
         }))}
       />
+
+      {/* Select Branch/cabang */}
       <IonAlert
         isOpen={showBranchAlert}
         onDidDismiss={() => setShowBranchAlert(false)}
@@ -266,20 +345,22 @@ const TransactionHistory: React.FC = () => {
           {
             text: "Pilih",
             handler: (selectedId: string) => {
-              const cabang = branches.find((b) => b.id === selectedId);
+              const cabang = branchList.find((b) => b.branch_id === selectedId);
               if (cabang) {
                 setSelectedBranch(cabang);
               }
             },
           },
         ]}
-        inputs={branches.map((branch) => ({
-          label: branch.name,
+        inputs={filteredBranches.map((branch) => ({
+          label: branch.branch_name,
           type: "radio",
-          value: branch.id,
-          checked: branch.id === selectedBranch.id,
+          value: branch.branch_id,
+          checked: branch.branch_id === selectedBranch.branch_id,
         }))}
       />
+
+      {/* Select by day */}
       <IonAlert
         isOpen={showDateFilterAlert}
         onDidDismiss={() => setShowDateFilterAlert(false)}

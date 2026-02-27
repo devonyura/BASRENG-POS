@@ -6,6 +6,7 @@ export interface Product {
   category_id: string;
   subcategory_id: string | null;
   name: string;
+  img: string | null;
   price: string;
   descriptions: string | null;
   weight_grams: string;
@@ -16,6 +17,7 @@ export interface ProductPayload {
   category_id: string;
   subcategory_id: string | null;
   name: string;
+  img: string | null;
   price: string;
   weight_grams: string;
   descriptions: string | null;
@@ -26,6 +28,7 @@ export interface UpdateProductPayload {
   category_id: string;
   subcategory_id: string | null | undefined;
   name: string;
+  img: string | null;
   price: string;
   weight_grams: string;
   descriptions: string | null;

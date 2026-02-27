@@ -62,7 +62,7 @@ class ProductsController extends ResourceController
   {
     $rules = [
       'category_id' => 'required|integer',
-      'name'        => 'required|min_length[3]|is_unique[products.name]',
+      'name'        => 'min_length[3]',
       'price'       => 'required|decimal'
     ];
 
@@ -75,6 +75,7 @@ class ProductsController extends ResourceController
       'category_id' => $data->category_id,
       'subcategory_id' => $data->subcategory_id === '' ? null : $data->subcategory_id,
       'name'        => $data->name,
+      'img'        => $data->img,
       'price'       => $data->price,
       'descriptions'       => $data->descriptions,
       'weight_grams'       => $data->weight_grams,
@@ -136,6 +137,7 @@ class ProductsController extends ResourceController
 
     $productData = [
       'name'        => $data->name,
+      'img'        => $data->img,
       'category_id' => $data->category_id,
       'subcategory_id' => $data->subcategory_id,
       'price'       => $data->price,

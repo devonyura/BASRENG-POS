@@ -26,7 +26,7 @@ const getStoredBranchData = (): BranchData | null => {
 
 export const useAuth = () => {
   const [token, setToken] = useState(Cookies.get("token") || null);
-  const [role, setRole] = useState(Cookies.get("role") || null);
+  const [role, setRole] = useState(Cookies.get("role")|| '');
   const [branchID, setBranchID] = useState(Cookies.get("branch_id") || null);
   const [branchData, setBranchData] = useState<BranchData | null>(getStoredBranchData());
   const [username, setUsername] = useState(Cookies.get("username") || null);
@@ -51,7 +51,7 @@ export const useAuth = () => {
     Cookies.set("token", jwtToken, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
     const payload = JSON.parse(atob(jwtToken.split(".")[1]));
     Cookies.set("role", payload.data.role, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
-    Cookies.set("username", payload.data.role, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
+    Cookies.set("username", payload.data.username, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
     Cookies.set("id_user", payload.data.id, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
     Cookies.set("branch_id", payload.data.branch_id, { expires: COOKIE_EXPIRATION_MINUTES / (24 * 60) });
 
@@ -76,7 +76,7 @@ export const useAuth = () => {
     Cookies.remove("username");
     Cookies.remove("id_user");
     setToken(null);
-    setRole( null);
+    setRole('');
     setBranchID(null);
     setBranchData(null);
     setUsername(null);

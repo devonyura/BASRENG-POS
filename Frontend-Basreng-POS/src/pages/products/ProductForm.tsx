@@ -243,6 +243,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
           )}
 
           <IonItem>
+            <IonLabel>Upload Gambar</IonLabel>
+            <input type="file" />
+          </IonItem>
+
+          <IonItem>
             <IonLabel position="stacked">Harga</IonLabel>
             <Controller
               control={control}

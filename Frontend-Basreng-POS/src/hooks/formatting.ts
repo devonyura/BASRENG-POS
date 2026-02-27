@@ -26,13 +26,41 @@ export function parseWeightGrams(quantity?: string | number | null) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-export function formatProductName(name: string, quantity?: string | number | null) {
-  const parsedQuantity = parseWeightGrams(quantity);
-  if (!parsedQuantity) {
+export function formatProductName(
+  name: string,
+  quantity?: string | number | null
+) {
+  const formattedWeight = formatWeight(quantity);
+
+  if (!formattedWeight) {
     return name;
   }
 
-  return `${name} (${parsedQuantity}gr)`;
+  return `${name} (${formattedWeight})`;
+}
+
+function formatWeight(
+  quantity?: string | number | null
+): string | null {
+  if (quantity === undefined || quantity === null || quantity === "") {
+    return null;
+  }
+
+  const grams = Number(quantity);
+
+  if (isNaN(grams) || grams <= 0) {
+    return null;
+  }
+
+  // ✅ Convert ke KG jika >= 1000 gr
+  if (grams >= 1000) {
+    const kg = grams / 1000;
+
+    // hilangkan .0 jika bulat
+    return `${Number.isInteger(kg) ? kg : kg.toFixed(2)}kg`;
+  }
+
+  return `${grams}gr`;
 }
 
 

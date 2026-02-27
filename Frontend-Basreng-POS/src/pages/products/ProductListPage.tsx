@@ -16,6 +16,7 @@ import {
   IonAlert,
   IonAccordion,
   IonAccordionGroup,
+  IonText,
 } from "@ionic/react";
 import { pencil, trashBin } from "ionicons/icons";
 import { useEffect, useState } from "react";
@@ -145,21 +146,15 @@ const ProductListPage: React.FC = () => {
         ) : (
           <IonAccordionGroup>
             {categories.map((category) => {
-              const categoryProducts = products.filter(
-                (product) => product.category_id === category.id,
-              );
+              const categoryProducts = products
+                .filter((product) => product.category_id === category.id)
+                .sort((a, b) => a.name.localeCompare(b.name));
               return (
                 <IonAccordion key={category.id} value={category.id}>
                   <IonItem slot="header">
                     <IonLabel>{category.name}</IonLabel>
                   </IonItem>
                   <div className="ion-padding" slot="content">
-                    <IonButton
-                      expand="block"
-                      onClick={() => handleAdd(category.id)}
-                    >
-                      Tambah {category.name}
-                    </IonButton>
                     <IonList>
                       {categoryProducts.map((product) => (
                         <IonItem key={product.id}>
@@ -170,10 +165,10 @@ const ProductListPage: React.FC = () => {
                                 product.weight_grams,
                               )}
                             </h2>
-                            <p>
+                            <IonText color={"secondary"}>
                               Harga: Rp{" "}
-                              {parseInt(product.price).toLocaleString()}
-                            </p>
+                              <i>{parseInt(product.price).toLocaleString()}</i>
+                            </IonText>
                           </IonLabel>
                           <IonButton
                             fill="clear"
@@ -193,6 +188,12 @@ const ProductListPage: React.FC = () => {
                         </IonItem>
                       ))}
                     </IonList>
+                    <IonButton
+                      expand="block"
+                      onClick={() => handleAdd(category.id)}
+                    >
+                      Tambah {category.name}
+                    </IonButton>
                   </div>
                 </IonAccordion>
               );

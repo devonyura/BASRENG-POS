@@ -12,6 +12,7 @@ class ProductModel extends Model
     'category_id',
     'subcategory_id',
     'name',
+    'img',
     'price',
     'descriptions',
     'weight_grams',

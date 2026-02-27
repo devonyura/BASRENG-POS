@@ -352,7 +352,7 @@ export const getBranch = async (id: number | null = null) => {
 };
 
 interface TransactionFilter {
-	username?: string;
+	username?: string | null;
 	branch?: number;
 	start_date?: string; // format ISO string (contoh: "2024-05-14")
 	end_date?: string;
