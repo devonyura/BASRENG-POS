@@ -17,6 +17,7 @@ import {
   IonAccordion,
   IonAccordionGroup,
   IonText,
+  IonImg,
 } from "@ionic/react";
 import { pencil, trashBin } from "ionicons/icons";
 import { useEffect, useState } from "react";
@@ -59,6 +60,7 @@ const ProductListPage: React.FC = () => {
     try {
       const data = await getProducts();
       setProducts(data);
+      console.log("Products:", data);
     } catch (err) {
       console.error("Gagal mengambil data produk:", err);
     } finally {
@@ -158,6 +160,9 @@ const ProductListPage: React.FC = () => {
                     <IonList>
                       {categoryProducts.map((product) => (
                         <IonItem key={product.id}>
+                          <IonImg
+                            src={`http://localhost:8080/uploads/products/${product.img}`}
+                          />
                           <IonLabel>
                             <h2>
                               {formatProductName(

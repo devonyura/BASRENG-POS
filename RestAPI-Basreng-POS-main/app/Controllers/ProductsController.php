@@ -60,148 +60,111 @@ class ProductsController extends ResourceController
   // POST /products
   public function create()
   {
-    $rules = [
-      'category_id' => 'required|integer',
-      'name'        => 'min_length[3]',
-      'price'       => 'required|decimal'
-    ];
+    $file = $this->request->getFile('img');
 
-    if (!$this->validate($rules)) {
-      return $this->failValidationErrors($this->validator->getErrors());
+    $imgName = null;
+
+    if ($file && $file->isValid()) {
+
+      $imgName = $file->getRandomName();
+
+      $file->move(
+        FCPATH . 'uploads/products/',
+        $imgName
+      );
     }
 
-    $data = $this->request->getJSON();
     $productData = [
-      'category_id' => $data->category_id,
-      'subcategory_id' => $data->subcategory_id === '' ? null : $data->subcategory_id,
-      'name'        => $data->name,
-      'img'        => $data->img,
-      'price'       => $data->price,
-      'descriptions'       => $data->descriptions,
-      'weight_grams'       => $data->weight_grams,
+      'category_id' => $this->request->getPost('category_id'),
+      'subcategory_id' => $this->request->getPost('subcategory_id'),
+      'name' => $this->request->getPost('name'),
+      'price' => $this->request->getPost('price'),
+      'descriptions' => $this->request->getPost('descriptions'),
+      'weight_grams' => $this->request->getPost('weight_grams'),
+      'img' => $imgName
     ];
 
-    try {
-      if (!$this->model->insert($productData)) {
-        $this->createLog('CREATE_PRODUCT', ['ERROR']);
-        return Services::response()
-          ->setJSON([
-            'status'  => 'error',
-            'message' => 'Gagal menambahkan produk.',
-            'errors'  => $this->model->errors()
-          ])
-          ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
-      }
-      $this->createLog('CREATE_PRODUCT', ['SUCCESS']);
-      return Services::response()
-        ->setJSON([
-          'status'  => 'success',
-          'message' => 'Produk berhasil ditambahkan',
-          'data'    => $productData
-        ])
-        ->setStatusCode(ResponseInterface::HTTP_CREATED);
-    } catch (Exception $e) {
-      $this->createLog('CREATE_PRODUCT', ['ERROR']);
-      return Services::response()
-        ->setJSON([
-          'status'  => 'error',
-          'message' => 'Terjadi kesalahan pada server.',
-          'error'   => $e->getMessage()
-        ])
-        ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
-    }
+    $this->model->insert($productData);
+
+    return $this->respondCreated([
+      'status' => 'success',
+      'data' => $productData
+    ]);
   }
 
   // PUT /products/{id}
   public function update($id = null)
   {
-    $rules = [
-      'id' => 'required|integer',
-      'category_id' => 'required|integer',
-      'name'        => 'required|min_length[3]',
-      'price'       => 'required|decimal'
+    $id = $this->request->getPost('id');
+
+    $product = $this->model->find($id);
+
+    if (!$product) {
+      return $this->failNotFound('Produk tidak ditemukan');
+    }
+
+    $file = $this->request->getFile('img');
+
+    $imgName = $product['img'];
+
+    // jika upload gambar baru
+    if ($file && $file->isValid()) {
+
+      // hapus gambar lama
+      if (
+        $product['img'] &&
+        file_exists(FCPATH . 'uploads/products/' . $product['img'])
+      ) {
+
+        unlink(FCPATH . 'uploads/products/' . $product['img']);
+      }
+
+      $imgName = $file->getRandomName();
+
+      $file->move(
+        FCPATH . 'uploads/products/',
+        $imgName
+      );
+    }
+
+    $data = [
+      'name' => $this->request->getPost('name'),
+      'category_id' => $this->request->getPost('category_id'),
+      'subcategory_id' => $this->request->getPost('subcategory_id'),
+      'price' => $this->request->getPost('price'),
+      'descriptions' => $this->request->getPost('descriptions'),
+      'weight_grams' => $this->request->getPost('weight_grams'),
+      'img' => $imgName
     ];
 
-    $data = $this->request->getJSON();
+    $this->model->update($id, $data);
 
-    if (!$this->model->find($id)) {
-      return Services::response()
-        ->setJSON(['status' => 'error', 'message' => 'Produk tidak ditemukan'])
-        ->setStatusCode(404);
-    }
-
-    if (!$this->validate($rules)) {
-      $this->createLog('UPDATE_PRODUCT', ['ERROR: Validasi gagal']);
-      return $this->failValidationErrors($this->validator->getErrors());
-    }
-
-    $productData = [
-      'name'        => $data->name,
-      'img'        => $data->img,
-      'category_id' => $data->category_id,
-      'subcategory_id' => $data->subcategory_id,
-      'price'       => $data->price,
-      'descriptions'       => $data->descriptions,
-      'weight_grams'       => $data->weight_grams,
-    ];
-
-    try {
-      $this->model->update($id, $productData);
-      $this->createLog('UPDATE_PRODUCT', ['SUCCESS']);
-      return Services::response()
-        ->setJSON([
-          'status'  => 'success',
-          'message' => 'Produk berhasil diperbarui',
-          'data'    => $productData
-        ])
-        ->setStatusCode(200);
-    } catch (Exception $e) {
-      $this->createLog('UPDATE_PRODUCT', ['ERROR']);
-      return Services::response()
-        ->setJSON([
-          'status'  => 'error',
-          'message' => 'Gagal memperbarui produk',
-          'error'   => $e->getMessage()
-        ])
-        ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
-    }
+    return $this->respond([
+      'status' => 'success'
+    ]);
   }
 
   // DELETE /products/{id}
   public function delete($id = null)
   {
-    try {
-      if (!$this->model->find($id)) {
-        $this->createLog('DELETE_PRODUCT', ['ERROR: Produk tidak ditemukan.']);
-        return $this->failNotFound('Produk tidak ditemukan.');
-      }
+    $product = $this->model->find($id);
 
-      if (!$this->model->delete($id)) {
-        $this->createLog('DELETE_PRODUCT', ['ERROR']);
-        return Services::response()
-          ->setJSON([
-            'status'  => 'error',
-            'message' => 'Gagal menghapus produk.'
-          ])
-          ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
-      }
-
-      $this->createLog('DELETE_PRODUCT', ['SUCCESS']);
-      return Services::response()
-        ->setJSON([
-          'status'  => 'success',
-          'message' => 'Produk berhasil dihapus.'
-        ])
-        ->setStatusCode(200);
-    } catch (Exception $e) {
-      $this->createLog('DELETE_PRODUCT', ['ERROR']);
-      return Services::response()
-        ->setJSON([
-          'status'  => 'error',
-          'message' => 'Terjadi kesalahan pada server.',
-          'error'   => $e->getMessage()
-        ])
-        ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
+    if (!$product) {
+      return $this->failNotFound();
     }
+
+    if (
+      $product['img'] &&
+      file_exists(FCPATH . 'uploads/products/' . $product['img'])
+    ) {
+
+      unlink(FCPATH . 'uploads/products/' . $product['img']);
+    }
+
+    $this->model->delete($id);
+
+    return $this->respondDeleted([
+      'status' => 'success'
+    ]);
   }
 }

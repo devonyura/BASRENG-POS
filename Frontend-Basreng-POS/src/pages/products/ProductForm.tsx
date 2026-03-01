@@ -15,6 +15,7 @@ import {
   IonAlert,
   IonChip,
   IonIcon,
+  IonImg,
 } from "@ionic/react";
 import { useEffect, useState } from "react";
 import {
@@ -158,35 +159,29 @@ const ProductForm: React.FC<ProductFormProps> = ({
     try {
       setLoading(true);
 
-      const payload = {
-        ...formData,
-        descriptions:
-          formData.descriptions?.filter((d) => d.trim() !== "").join(", ") ||
-          "",
+      const payload: ProductPayload = {
+        name: formData.name,
+        price: formData.price,
+        weight_grams: formData.weight_grams,
+        category_id: formData.category_id,
         subcategory_id: formData.subcategory_id ?? null,
+        descriptions: formData.descriptions?.join(", ") || null,
+        img: imageFile,
       };
 
       if (initialProduct) {
-        const updatePayload: UpdateProductPayload = {
+        await updateProduct({
           ...payload,
           id: initialProduct.id,
-        };
-        await updateProduct(updatePayload);
+        });
       } else {
         await createProduct(payload);
-        console.log("CREATE PAYLOAD:", payload);
       }
 
       resetForm();
+      setImageFile(null);
       onDidDismiss();
       onSuccess?.();
-    } catch (err) {
-      setShowAlert(true);
-      setAlertMessage({
-        title: "Gagal Menyimpan",
-        message: `${err}`,
-      });
-      console.error("Gagal menyimpan produk:", err);
     } finally {
       setLoading(false);
     }
@@ -210,6 +205,10 @@ const ProductForm: React.FC<ProductFormProps> = ({
     reset({ ...watch(), descriptions: updated });
   };
 
+  // FIle Gambar Uplaad
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
       <IonHeader>
@@ -223,7 +222,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form
+          onSubmit={handleSubmit(onSubmit, (err) =>
+            console.log("VALIDATION ERROR", err),
+          )}
+        >
           <IonItem>
             <IonLabel position="stacked">Nama Produk</IonLabel>
             <Controller
@@ -242,10 +245,25 @@ const ProductForm: React.FC<ProductFormProps> = ({
             <p className="ion-text-error">{errors.name.message}</p>
           )}
 
-          <IonItem>
-            <IonLabel>Upload Gambar</IonLabel>
-            <input type="file" />
-          </IonItem>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+
+              if (file) {
+                setImageFile(file);
+                setPreview(URL.createObjectURL(file));
+              }
+            }}
+          />
+          {preview && <IonImg src={preview} />}
+
+          {!preview && initialProduct?.img && (
+            <IonImg
+              src={`http://localhost:8080/uploads/products/${initialProduct.img}`}
+            />
+          )}
 
           <IonItem>
             <IonLabel position="stacked">Harga</IonLabel>

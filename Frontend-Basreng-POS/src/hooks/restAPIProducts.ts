@@ -17,10 +17,10 @@ export interface ProductPayload {
   category_id: string;
   subcategory_id: string | null;
   name: string;
-  img: string | null;
   price: string;
   weight_grams: string;
   descriptions: string | null;
+  img?: File | null;
 }
 
 export interface UpdateProductPayload {
@@ -28,100 +28,76 @@ export interface UpdateProductPayload {
   category_id: string;
   subcategory_id: string | null | undefined;
   name: string;
-  img: string | null;
+  img?: File | null;
   price: string;
   weight_grams: string;
   descriptions: string | null;
 }
 
-export const createProduct = async (productPayload: ProductPayload): Promise<ApiResponse> => {
-  return new Promise(async (resolve, reject) => {
-    console.log("API:", productPayload)
-    try {
-      // Ambil token JWT dari localStorage
-      const TOKEN = Cookies.get("token");
+export const createProduct = async (
+  productPayload: ProductPayload
+): Promise<ApiResponse> => {
 
-      // Cek apakah API online
-      const apiOnline = await isApiOnline();
-      if (!apiOnline) {
-        reject("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
-        return;
-      }
+  const TOKEN = Cookies.get("token");
 
-      console.warn(productPayload);
-      // Konfigurasi request dengan header Authorization
-      const response = await fetch(`${BASE_API_URL}/api/products`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${TOKEN}`,
-        },
-        body: JSON.stringify(productPayload),
-      });
+  const formData = new FormData();
 
-      // Check Response
-      checkOKResponse(response)
-
-      // Ubah data ke json format
-      const data = await response.json();
-
-      console.info("Status Request Create Transaction : ", data.status);
-
-      resolve({ success: true, data });
-
-    }
-    catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
-      console.log("Gagal menambah Produk:", error);
-      reject("Gagal menambah Produk: " + errorMessage);
+  Object.entries(productPayload).forEach(([key, value]) => {
+    if (value !== null && value !== undefined) {
+      formData.append(key, value as any);
     }
   });
+
+  console.log("Product:",formData);
+
+  const response = await fetch(`${BASE_API_URL}/api/products`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+        Authorization: `Bearer ${TOKEN}`,
+      },
+    body: formData,
+  });
+
+  checkOKResponse(response);
+
+  const data = await response.json();
+
+  return { success: true, data };
 };
 
-export const updateProduct = async (updateProductPayload: UpdateProductPayload): Promise<ApiResponse> => {
-  return new Promise(async (resolve, reject) => {
-    console.log("API:", updateProductPayload)
-    try {
-      // Ambil token JWT dari localStorage
-      const TOKEN = Cookies.get("token");
+export const updateProduct = async (
+  payload: UpdateProductPayload
+): Promise<ApiResponse> => {
 
-      // Cek apakah API online
-      const apiOnline = await isApiOnline();
-      if (!apiOnline) {
-        reject("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
-        return;
-      }
+  const TOKEN = Cookies.get("token");
 
-      console.warn(updateProductPayload);
-      // Konfigurasi request dengan header Authorization
-      const response = await fetch(`${BASE_API_URL}/api/products/${updateProductPayload.id}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${TOKEN}`,
-        },
-        body: JSON.stringify(updateProductPayload),
-      });
+  const formData = new FormData();
 
-      // Check Response
-      checkOKResponse(response)
-
-      // Ubah data ke json format
-      const data = await response.json();
-
-      console.info("Status Request Save Transaction : ", data.status);
-
-      resolve({ success: true, data });
-
-    }
-    catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
-      console.log("Gagal edit Produk:", error);
-      reject("Gagal edit Produk: " + errorMessage);
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== null && value !== undefined) {
+      formData.append(key, value as any);
     }
   });
+
+  const response = await fetch(
+    `${BASE_API_URL}/api/products/${payload.id}`, // ✅ kirim id di URL
+    {
+      method: "PUT", // atau PUT (lihat note bawah)
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+      },
+      body: formData,
+    }
+  );
+
+  checkOKResponse(response);
+
+  return {
+    success: true,
+    data: await response.json(),
+  };
 };
 
 export const deleteProduct = async (id: string): Promise<ApiResponse> => {
