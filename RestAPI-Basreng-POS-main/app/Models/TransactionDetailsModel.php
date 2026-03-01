@@ -10,7 +10,7 @@ class TransactionDetailsModel extends Model
   protected $primaryKey = 'id';
   protected $allowedFields = [
     'transaction_id',
-    'product_id',
+    'variant_id',
     'quantity',
     'price',
     'subtotal',

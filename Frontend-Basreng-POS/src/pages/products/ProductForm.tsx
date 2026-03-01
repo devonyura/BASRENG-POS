@@ -17,12 +17,11 @@ import {
   IonIcon,
   IonImg,
 } from "@ionic/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   createProduct,
   updateProduct,
   ProductPayload,
-  UpdateProductPayload,
 } from "../../hooks/restAPIProducts";
 import { getCategories, Category } from "../../hooks/restAPICategories";
 import { getSubCategoriesbyCategory } from "../../hooks/restAPISubCategories";
@@ -179,7 +178,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       }
 
       resetForm();
-      setImageFile(null);
+      resetImageState();
       onDidDismiss();
       onSuccess?.();
     } finally {
@@ -208,6 +207,43 @@ const ProductForm: React.FC<ProductFormProps> = ({
   // FIle Gambar Uplaad
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const resetImageState = () => {
+    setImageFile(null);
+    setPreview(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  useEffect(() => {
+    if (initialProduct?.img) {
+      setPreview(
+        `http://localhost:8080/uploads/products/${initialProduct.img}`,
+      );
+    } else {
+      setPreview(null);
+    }
+
+    setImageFile(null);
+  }, [initialProduct]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+      resetImageState();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
@@ -246,24 +282,21 @@ const ProductForm: React.FC<ProductFormProps> = ({
           )}
 
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={(e) => {
               const file = e.target.files?.[0];
 
-              if (file) {
-                setImageFile(file);
-                setPreview(URL.createObjectURL(file));
-              }
+              if (!file) return;
+
+              setImageFile(file);
+
+              const objectUrl = URL.createObjectURL(file);
+              setPreview(objectUrl);
             }}
           />
           {preview && <IonImg src={preview} />}
-
-          {!preview && initialProduct?.img && (
-            <IonImg
-              src={`http://localhost:8080/uploads/products/${initialProduct.img}`}
-            />
-          )}
 
           <IonItem>
             <IonLabel position="stacked">Harga</IonLabel>

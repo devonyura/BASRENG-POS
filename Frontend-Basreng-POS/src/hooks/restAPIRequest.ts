@@ -2,6 +2,8 @@ import React from "react";
 import Cookies from "js-cookie";
 // export const BASE_API_URL = "https://restapi.basrenghosting.biz.id"
 export const BASE_API_URL = "http://localhost:8080"
+export const FILE_BASE_URL =
+  `${BASE_API_URL}/uploads/products`;
 
 export interface ApiResponse {
 	success: boolean;
@@ -216,7 +218,7 @@ export const getDataProducts = async () => {
 
 	} catch (error) {
 		// Kirim error jika gagal request
-		console.error("Error Fetching Students", error);
+		console.error("Error Products", error);
 		return error;
 	}
 };

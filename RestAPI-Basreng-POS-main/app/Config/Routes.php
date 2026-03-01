@@ -56,11 +56,16 @@ $routes->group('api', ['filter' => 'auth'], function ($routes) {
   $routes->post('transactions/get-receipt', 'TransactionsController::get_receipt');
 
   $routes->resource('products', ['controller' => 'ProductsController']);
+  $routes->post('products/update/(:num)', 'ProductsController::update/$1');
+
   $routes->resource('packages', ['controller' => 'PackageController']);
   $routes->resource('categories', ['controller' => 'CategoriesController']);
   $routes->resource('subcategories', ['controller' => 'SubCategoriesController']);
   $routes->resource('branch', ['controller' => 'BranchController']);
   $routes->resource('resellers', ['controller' => 'ResellersController']);
+
+  $routes->get('product-variants/product/(:num)', 'ProductVariantsController::byProduct/$1');
+  $routes->resource('product-variants', ['controller' => 'ProductVariantsController']);
 
 
   $routes->get('transaction-details/transaction/(:num)', 'TransactionsDetailsController::showByTransactionId/$1');

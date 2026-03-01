@@ -65,38 +65,30 @@ class ProductsController extends ResourceController
     $imgName = null;
 
     if ($file && $file->isValid()) {
-
       $imgName = $file->getRandomName();
-
-      $file->move(
-        FCPATH . 'uploads/products/',
-        $imgName
-      );
+      $file->move(FCPATH . 'uploads/products/', $imgName);
     }
 
     $productData = [
-      'category_id' => $this->request->getPost('category_id'),
+      'category_id'    => $this->request->getPost('category_id'),
       'subcategory_id' => $this->request->getPost('subcategory_id'),
-      'name' => $this->request->getPost('name'),
-      'price' => $this->request->getPost('price'),
-      'descriptions' => $this->request->getPost('descriptions'),
-      'weight_grams' => $this->request->getPost('weight_grams'),
-      'img' => $imgName
+      'name'           => $this->request->getPost('name'),
+      'descriptions'   => $this->request->getPost('descriptions'),
+      'img'            => $imgName
     ];
 
     $this->model->insert($productData);
 
     return $this->respondCreated([
       'status' => 'success',
-      'data' => $productData
+      'message' => 'Product master created'
     ]);
   }
 
-  // PUT /products/{id}
+  // POST api/products/update/{id}
   public function update($id = null)
   {
-    $id = $this->request->getPost('id');
-
+    // dd($this->request->getFile('img'));
     $product = $this->model->find($id);
 
     if (!$product) {

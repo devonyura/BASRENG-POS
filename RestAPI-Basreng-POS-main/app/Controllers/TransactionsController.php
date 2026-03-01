@@ -23,96 +23,6 @@ class TransactionsController extends ResourceController
     $this->db = \Config\Database::connect();
   }
 
-  // public function createTransaction()
-  // {
-  //   $input = $this->request->getJSON(true);
-  //   if (!$input) {
-  //     return $this->fail("Invalid JSON Format", 400);
-  //   }
-
-  //   $isReseller = !empty($input['is_reseller']);
-  //   $discountInfo = $this->calculateResellerDiscount($input['transaction_details'], $isReseller);
-  //   $discountAmount = $discountInfo['discount'];
-
-  //   $totalBeforeDiscount = 0;
-  //   foreach ($input['transaction_details'] as $detail) {
-  //     $totalBeforeDiscount += ((int) $detail['price'] * (int) $detail['quantity']);
-  //   }
-  //   $totalPrice = max(0, $totalBeforeDiscount - $discountAmount);
-
-  //   $cashAmount = $input['cash_amount'] ?? null;
-  //   $changeAmount = $input['change_amount'] ?? null;
-  //   if (($input['payment_method'] ?? '') === 'cash' && $cashAmount !== null) {
-  //     $changeAmount = (int) $cashAmount - $totalPrice;
-  //   }
-
-  //   // Generate transaction code
-  //   $now = new \DateTime();
-  //   $randomNumber = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
-  //   $transaction_code = sprintf("CAB01%s%02d", $now->format('dmyHi'), $randomNumber);
-
-  //   // Prepare Transaction data
-  //   $transactionData = [
-  //     'transaction_code' =>  $transaction_code,
-  //     'user_id'          => $input['user_id'],
-  //     'total_price' => $totalPrice,
-  //     'cash_amount' => $cashAmount,
-  //     'change_amount' => $changeAmount,
-  //     'payment_method' => $input['payment_method'],
-  //     'is_online_order' => $input['is_online_order'],
-  //   ];
-
-  //   // Add Customer data if is_online_order === 1
-  //   if ($input['is_online_order'] === 1) {
-  //     $transactionData['customer_name'] = $input['customer_name'] ?? null;
-  //     $transactionData['customer_address'] = $input['customer_address'] ?? null;
-  //     $transactionData['customer_phone'] = $input['customer_phone'] ?? null;
-  //     $transactionData['notes'] = $input['notes'] ?? null;
-  //   }
-  //   $transactionData['branch_id'] = $input['branch_id'];
-  //   $transactionData['reseller_id'] = $input['reseller_id'];
-  //   $transactionData['transaction_type'] = $input['transaction_type'];
-  //   $transactionData['shopee_code'] = $input['shopee_code'];
-
-  //   $this->db->transStart();
-
-
-  //   // Insert Transaction data actions
-  //   $this->db->table('transactions')->insert($transactionData);
-  //   $transaction_id = $this->db->insertID();
-
-  //   if (!$transaction_id) {
-  //     $this->db->transRollback();
-  //     return $this->fail('Failed to create transaction', 500);
-  //   }
-
-  //   // Insert transaction_details
-  //   $transaction_details = [];
-  //   foreach ($input['transaction_details'] as $detail) {
-  //     $transaction_details[] = [
-  //       'transaction_id' => $transaction_id,
-  //       'product_id' => $detail['product_id'],
-  //       'quantity' => $detail['quantity'],
-  //       'price' => $detail['price'],
-  //       'subtotal' => ($detail['price'] * $detail['quantity']),
-  //       'created_at' => date('Y-m-d H:i:s')
-  //     ];
-  //   }
-
-  //   $this->db->table('transaction_details')->insertBatch($transaction_details);
-
-  //   $this->db->transComplete();
-
-  //   if ($this->db->transStatus() === false) {
-  //     return $this->fail('Transaction Failed, please try again', 500);
-  //   }
-
-  //   return $this->respond([
-  //     'message' => 'Transaction created Successfully',
-  //     'transaction_code' => $transaction_code
-  //   ]);
-  // }
-
   public function get_receipt()
   {
     $input = $this->request->getJSON(true);
@@ -140,8 +50,22 @@ class TransactionsController extends ResourceController
 
     // Ambil detail transaksi
     $transaction_details = $this->db->table('transaction_details')
-      ->select('transaction_details.*, products.name as product_name')
-      ->join('products', 'products.id = transaction_details.product_id')
+      ->select('
+      transaction_details.quantity,
+  transaction_details.price,
+  transaction_details.subtotal,
+  products.id as product_id,
+  products.name as product_name,
+  product_variants.weight_grams
+  ')
+      ->join(
+        'product_variants',
+        'product_variants.id = transaction_details.product_variant_id'
+      )
+      ->join(
+        'products',
+        'products.id = product_variants.product_id'
+      )
       ->where('transaction_details.transaction_id', $transaction['id'])
       ->get()
       ->getResultArray();
@@ -334,9 +258,9 @@ class TransactionsController extends ResourceController
       $db = \Config\Database::connect();
       $builder = $db->table('transactions');
       $builder->select('
-      *,
-      users.username AS username
-      ');
+        *,
+        users.username AS username
+        ');
       $builder->join('users', 'users.id = transactions.user_id', 'left');
       $builder->where('transaction_code', $transactions_code);
       $transaction = $builder->get()->getRowArray();
@@ -350,14 +274,33 @@ class TransactionsController extends ResourceController
       // Ambil transaction_id berdasarkan transaction_id
       $builderDetail = $db->table('transaction_details');
       $builderDetail->select('
-	    transaction_details.transaction_id,
-	    transaction_details.product_id,
-	    products.name AS product_name,
-	    transaction_details.quantity,
-	    transaction_details.price,
-	    transaction_details.subtotal
-      ');
-      $builderDetail->join('products', 'products.id = transaction_details.product_id', 'left');
+        transaction_details.transaction_id,
+        transaction_details.product_id,
+        products.name AS product_name,
+        transaction_details.quantity,
+        transaction_details.price,
+        transaction_details.subtotal
+        ');
+      // $builderDetail->join('products', 'products.id = transaction_details.product_id', 'left');
+      $builderDetail->select('
+      transaction_details.transaction_id,
+      transaction_details.quantity,
+      transaction_details.price,
+      transaction_details.subtotal,
+      products.name AS product_name,
+      product_variants.weight_grams
+    ');
+
+      $builderDetail->join(
+        'product_variants',
+        'product_variants.id = transaction_details.product_variant_id'
+      );
+
+      $builderDetail->join(
+        'products',
+        'products.id = product_variants.product_id'
+      );
+
       $builderDetail->where('transaction_id', $transaction['id']);
       $details = $builderDetail->get()->getResultArray();
 
@@ -451,12 +394,22 @@ class TransactionsController extends ResourceController
 
       // Simpan detail transaksi
       foreach ($details as $item) {
+
+        $variant = $this->db->table('product_variants')
+          ->where('id', $item['variant_id'])
+          ->get()
+          ->getRowArray();
+
+        if (!$variant) {
+          throw new \Exception("Variant tidak ditemukan");
+        }
+
         $transactionDetailsModel->insert([
           'transaction_id' => $transactionId,
-          'product_id'     => $item['product_id'],
-          'quantity'       => $item['quantity'],
-          'price'          => $item['price'],
-          'subtotal'       => $item['subtotal'],
+          'product_variant_id' => $variant['id'],
+          'quantity' => $item['quantity'],
+          'price' => $variant['price'],
+          'subtotal' => $variant['price'] * $item['quantity'],
         ]);
       }
 

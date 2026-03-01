@@ -1,16 +1,18 @@
 import { BASE_API_URL, isApiOnline, checkOKResponse, ApiResponse } from "./restAPIRequest";
 import Cookies from "js-cookie";
 
+export interface ProductVariant {
+  variant_id: string;
+  weight_grams: string;
+  price: string;
+}
+
 export interface Product {
   id: string;
-  category_id: string;
-  subcategory_id: string | null;
   name: string;
   img: string | null;
-  price: string;
-  descriptions: string | null;
-  weight_grams: string;
-  created_at: string;
+  category_id: string;
+  variants: ProductVariant[];
 }
 
 export interface ProductPayload {
@@ -81,9 +83,9 @@ export const updateProduct = async (
   });
 
   const response = await fetch(
-    `${BASE_API_URL}/api/products/${payload.id}`, // ✅ kirim id di URL
+    `${BASE_API_URL}/api/products/update/${payload.id}`, // ✅ kirim id di URL
     {
-      method: "PUT", // atau PUT (lihat note bawah)
+      method: "POST", // atau PUT (lihat note bawah)
       credentials: "include",
       headers: {
         Authorization: `Bearer ${TOKEN}`,
@@ -144,7 +146,7 @@ export const deleteProduct = async (id: string): Promise<ApiResponse> => {
   });
 };
 
-export const getProducts = async (): Promise<Product | any> => {
+export const getProducts = async (): Promise<Product[]> => {
   try {
     // Ambil token JWT dari localStorage
     const TOKEN = Cookies.get("token");
@@ -156,14 +158,13 @@ export const getProducts = async (): Promise<Product | any> => {
     }
 
 
-    const url = `${BASE_API_URL}/api/products`;
+    const url = `${BASE_API_URL}/api/product-variants`;
 
     // Konfigurasi request dengan header Authorization
     const response = await fetch(url, {
       method: "GET",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json",
         "Authorization": `Bearer ${TOKEN}`,
       },
     });

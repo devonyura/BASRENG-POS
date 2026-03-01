@@ -27,9 +27,9 @@ import {
   deleteProduct,
 } from "../../hooks/restAPIProducts";
 import { getCategories, Category } from "../../hooks/restAPICategories";
-import { formatProductName } from "../../hooks/formatting";
 import ProductForm, { AlertMessageProps } from "./ProductForm";
 import "./ProductListPage.css";
+import { FILE_BASE_URL } from "../../hooks/restAPIRequest";
 
 const ProductListPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -51,9 +51,14 @@ const ProductListPage: React.FC = () => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState("");
 
+  const fetchInitialData = async () => {
+    setLoading(true);
+    await Promise.all([fetchProducts(), fetchCategories()]);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    fetchInitialData();
   }, []);
 
   const fetchProducts = async () => {
@@ -84,15 +89,7 @@ const ProductListPage: React.FC = () => {
   };
 
   const handleEdit = (product: Product) => {
-    const sanitizedProduct = {
-      ...product,
-      price: product.price.toString().split(".")[0],
-      quantity:
-        product.weight_grams !== undefined && product.weight_grams !== null
-          ? product.weight_grams.toString().split(".")[0]
-          : "",
-    };
-    setEditingProduct(sanitizedProduct);
+    setEditingProduct(product);
     setShowModal(true);
   };
 
@@ -159,21 +156,29 @@ const ProductListPage: React.FC = () => {
                   <div className="ion-padding" slot="content">
                     <IonList>
                       {categoryProducts.map((product) => (
-                        <IonItem key={product.id}>
-                          <IonImg
-                            src={`http://localhost:8080/uploads/products/${product.img}`}
-                          />
+                        <IonItem key={product.id} className="product-item">
+                          <div className="product-image">
+                            <IonImg
+                              src={
+                                product.img
+                                  ? `${FILE_BASE_URL}/${product.img}`
+                                  : "/assets/no-image.png"
+                              }
+                            />
+                          </div>
                           <IonLabel>
-                            <h2>
-                              {formatProductName(
-                                product.name,
-                                product.weight_grams,
-                              )}
-                            </h2>
-                            <IonText color={"secondary"}>
-                              Harga: Rp{" "}
-                              <i>{parseInt(product.price).toLocaleString()}</i>
-                            </IonText>
+                            <h2>{product.name}</h2>
+
+                            {product.variants.length === 0 ? (
+                              <IonText color="medium">Tidak ada varian</IonText>
+                            ) : (
+                              product.variants.map((variant) => (
+                                <p key={variant.variant_id}>
+                                  {variant.weight_grams}gr — Rp{" "}
+                                  {parseInt(variant.price).toLocaleString()}
+                                </p>
+                              ))
+                            )}
                           </IonLabel>
                           <IonButton
                             fill="clear"
