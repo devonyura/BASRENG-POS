@@ -31,22 +31,21 @@ class ProductsController extends ResourceController
     }
   }
 
-  // GET /products
+
   public function index()
   {
     try {
       $data = $this->model->findAll();
       if (empty($data)) {
-        $this->createLog('READ_ALL_PRODUCTS', 'Tidak ada data produk.');
+
         return $this->failNotFound('Tidak ada data produk.');
       }
-      $this->createLog('READ_ALL_PRODUCTS', ['SUCCESS']);
+
       return $this->respond([
         'status' => 'success',
         'data'   => $data
       ]);
     } catch (Exception $e) {
-      $this->createLog('READ_ALL_PRODUCTS', ['ERROR']);
       return Services::response()
         ->setJSON([
           'status'  => 'error',
@@ -55,6 +54,72 @@ class ProductsController extends ResourceController
         ])
         ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
     }
+  }
+
+  // GET /products
+  public function getWithVariant()
+  {
+    $db = \Config\Database::connect();
+
+    $builder = $db->table('products p');
+
+    $builder->select("
+        p.id as product_id,
+        p.name,
+        p.img,
+        p.category_id,
+        p.descriptions,
+
+        pv.id as variant_id,
+        pv.weight_grams,
+        pv.price
+    ");
+
+    $builder->join(
+      'product_variants pv',
+      'pv.product_id = p.id',
+      'left'
+    );
+
+    $builder->orderBy('p.id', 'ASC');
+
+    $result = $builder->get()->getResultArray();
+
+    // ===============================
+    // GROUPING PRODUCTS -> VARIANTS
+    // ===============================
+
+    $products = [];
+
+    foreach ($result as $row) {
+
+      $pid = $row['product_id'];
+
+      if (!isset($products[$pid])) {
+        $products[$pid] = [
+          'id' => $pid,
+          'name' => $row['name'],
+          'img' => $row['img'],
+          'descriptions' => $row['descriptions'],
+          'category_id' => $row['category_id'],
+          'variants' => []
+        ];
+      }
+
+      // jika ada variant
+      if ($row['variant_id']) {
+        $products[$pid]['variants'][] = [
+          'variant_id' => $row['variant_id'],
+          'weight_grams' => $row['weight_grams'],
+          'price' => $row['price'],
+        ];
+      }
+    }
+
+    return $this->respond([
+      'status' => 'success',
+      'data' => array_values($products)
+    ]);
   }
 
   // POST /products
@@ -81,7 +146,8 @@ class ProductsController extends ResourceController
 
     return $this->respondCreated([
       'status' => 'success',
-      'message' => 'Product master created'
+      'message' => 'Product master created',
+      'product' => $productData,
     ]);
   }
 

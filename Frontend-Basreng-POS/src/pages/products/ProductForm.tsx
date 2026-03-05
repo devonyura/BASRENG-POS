@@ -12,433 +12,338 @@ import {
   IonSpinner,
   IonSelect,
   IonSelectOption,
-  IonAlert,
-  IonChip,
-  IonIcon,
   IonImg,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonText,
+  IonChip,
 } from "@ionic/react";
+
 import { useEffect, useState, useRef } from "react";
 import {
   createProduct,
   updateProduct,
-  ProductPayload,
+  CreateProductPayload,
 } from "../../hooks/restAPIProducts";
+
 import { getCategories, Category } from "../../hooks/restAPICategories";
-import { getSubCategoriesbyCategory } from "../../hooks/restAPISubCategories";
+import ProductVariantSection from "../../components/productVariant/ProductVariantSection";
 
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { pin } from "ionicons/icons";
-import "./ProductForm.css";
 
-interface ProductFormProps {
-  isOpen: boolean;
-  onDidDismiss: () => void;
-  onSuccess?: () => void;
-  initialProduct?: any;
-  initialCategoryId?: string;
-}
-
-export interface AlertMessageProps {
-  title: string;
-  message: string;
-}
+/* ================= SCHEMA ================= */
 
 const productSchema = z.object({
-  name: z.string().min(1, "Nama produk harus diisi"),
-  price: z.string().min(1, "Harga harus diisi"),
-  weight_grams: z.string().min(1),
-  descriptions: z.array(z.string()).optional(),
-  category_id: z.string().min(1, "Kategori harus dipilih"),
-  subcategory_id: z.string().nullable().optional(),
+  name: z.string().min(1, "Nama wajib diisi"),
+
+  category_id: z.coerce
+    .number({
+      required_error: "Kategori wajib dipilih",
+      invalid_type_error: "Kategori tidak valid",
+    })
+    .nullable(),
+
+  descriptions: z.array(z.string()).optional().default([]),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
 
-const ProductForm: React.FC<ProductFormProps> = ({
+interface Props {
+  isOpen: boolean;
+  onDidDismiss: () => void;
+  onSuccess?: () => void;
+  initialProduct?: any;
+  initialCategory?: number | null;
+}
+
+const ProductForm: React.FC<Props> = ({
   isOpen,
   onDidDismiss,
   onSuccess,
   initialProduct,
-  initialCategoryId,
+  initialCategory,
 }) => {
+  const isEditMode = !!initialProduct?.id;
+
+  const [productId, setProductId] = useState<number | null>(
+    initialProduct?.id ?? null,
+  );
+
   const [categories, setCategories] = useState<Category[]>([]);
-  const [subcategories, setSubcategories] = useState<Category[]>([]);
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({
-    title: "",
-    message: "",
-  });
   const [loading, setLoading] = useState(false);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const {
     control,
     handleSubmit,
-    reset,
     watch,
-    formState: { errors },
+    reset,
+    setValue,
+    getValues,
+    formState,
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: "",
-      price: "",
+      category_id: initialCategory ?? undefined,
       descriptions: [],
-      weight_grams: "",
-      category_id: "",
-      subcategory_id: null,
     },
   });
 
-  const watchCategory = watch("category_id");
-
-  // Fetch subkategori jika category berubah
   useEffect(() => {
-    if (watchCategory) {
-      getSubCategoriesbyCategory(watchCategory)
-        .then((data) => setSubcategories(data))
-        .catch((error) => {
-          console.error("Gagal Mengambil Sub Kategori", error);
-          setSubcategories([]);
-        });
-    } else {
-      setSubcategories([]);
-    }
-  }, [watchCategory]);
+    console.log("ERRORS:", formState.errors);
+  }, [formState.errors]);
 
-  // Fetch kategori saat modal terbuka
+  const descriptions = watch("descriptions") || [];
+
+  /* LOAD CATEGORY */
   useEffect(() => {
-    if (isOpen) {
-      resetForm();
-      getCategories()
-        .then((data) => setCategories(data))
-        .catch((error) => console.error(error));
-    }
+    if (!isOpen) return;
+    getCategories().then(setCategories);
   }, [isOpen]);
 
-  // Isi default jika edit
+  /* AUTO SELECT CATEGORY */
   useEffect(() => {
-    if (initialProduct) {
-      reset({
-        name: initialProduct.name,
-        price: initialProduct.price,
-        weight_grams: initialProduct.weight_grams ?? "",
-        descriptions: initialProduct.descriptions
-          ? initialProduct.descriptions.split(",").map((d: string) => d.trim())
-          : [],
-        category_id: initialProduct.category_id,
-        subcategory_id: initialProduct.subcategory_id || null,
-      });
-    } else if (initialCategoryId) {
-      reset({
-        name: "",
-        price: "",
-        descriptions: [],
-        weight_grams: "",
-        category_id: initialCategoryId,
-        subcategory_id: null,
-      });
-    } else {
-      resetForm();
-    }
-  }, [initialProduct, initialCategoryId, reset]);
+    if (!isOpen || isEditMode) return;
 
-  const resetForm = () => {
     reset({
       name: "",
-      price: "",
+      category_id: initialCategory ?? null,
       descriptions: [],
-      weight_grams: "",
-      category_id: "",
-      subcategory_id: null,
     });
-  };
 
-  const onSubmit = async (formData: ProductFormData) => {
+    setProductId(null);
+    setPreview(null);
+    setImageFile(null);
+  }, [isOpen, initialCategory, isEditMode, reset]);
+
+  /* EDIT MODE */
+  useEffect(() => {
+    if (!initialProduct) return;
+
+    reset({
+      name: initialProduct.name,
+      category_id: initialProduct.category_id,
+      descriptions: initialProduct.descriptions
+        ? initialProduct.descriptions.split(",").map((d: string) => d.trim())
+        : [],
+    });
+
+    if (initialProduct.img) {
+      setPreview(
+        `http://localhost:8080/uploads/products/${initialProduct.img}`,
+      );
+    }
+
+    setProductId(initialProduct.id);
+  }, [initialProduct, reset]);
+
+  /* SUBMIT */
+  const onSubmit = async (data: ProductFormData) => {
     try {
       setLoading(true);
 
-      const payload: ProductPayload = {
-        name: formData.name,
-        price: formData.price,
-        weight_grams: formData.weight_grams,
-        category_id: formData.category_id,
-        subcategory_id: formData.subcategory_id ?? null,
-        descriptions: formData.descriptions?.join(", ") || null,
-        img: imageFile,
+      const payload: CreateProductPayload = {
+        name: data.name,
+        category_id: data.category_id,
+        descriptions: data.descriptions?.join(",") ?? "",
+        img: imageFile ?? undefined,
       };
 
-      if (initialProduct) {
-        await updateProduct({
-          ...payload,
-          id: initialProduct.id,
-        });
+      if (isEditMode && initialProduct) {
+        await updateProduct({ ...payload, id: initialProduct.id });
+        // setProductId(initialProduct.id);
       } else {
-        await createProduct(payload);
+        const res = await createProduct(payload);
+        // setProductId(res.product.id);
       }
 
-      resetForm();
-      resetImageState();
-      onDidDismiss();
       onSuccess?.();
     } finally {
       setLoading(false);
     }
   };
 
-  const descriptions = watch("descriptions") || [];
+  useEffect(() => {
+    if (!isEditMode && initialCategory && categories.length > 0) {
+      setValue("category_id", initialCategory);
+    }
+  }, [categories, initialCategory, isEditMode, setValue]);
 
+  /* CHIP FUNCTIONS */
   const addDescription = () => {
-    const updated = [...descriptions, ""];
-    reset({ ...watch(), descriptions: updated });
+    const current = getValues("descriptions") || [];
+    setValue("descriptions", [...current, ""]);
   };
 
   const updateDescription = (index: number, value: string) => {
-    const updated = [...descriptions];
+    const current = getValues("descriptions") || [];
+    const updated = [...current];
     updated[index] = value;
-    reset({ ...watch(), descriptions: updated });
+
+    setValue("descriptions", updated, { shouldDirty: true });
   };
 
   const removeDescription = (index: number) => {
-    const updated = descriptions.filter((_, i) => i !== index);
-    reset({ ...watch(), descriptions: updated });
+    const current = getValues("descriptions");
+    const updated = current.filter((_, i) => i !== index);
+
+    setValue("descriptions", updated);
   };
-
-  // FIle Gambar Uplaad
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const resetImageState = () => {
-    setImageFile(null);
-    setPreview(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  useEffect(() => {
-    if (initialProduct?.img) {
-      setPreview(
-        `http://localhost:8080/uploads/products/${initialProduct.img}`,
-      );
-    } else {
-      setPreview(null);
-    }
-
-    setImageFile(null);
-  }, [initialProduct]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      resetForm();
-      resetImageState();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    return () => {
-      if (preview?.startsWith("blob:")) {
-        URL.revokeObjectURL(preview);
-      }
-    };
-  }, [preview]);
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonButton onClick={onDidDismiss}>Kembali</IonButton>
+            <IonButton onClick={onDidDismiss}>Tutup</IonButton>
           </IonButtons>
-          <IonTitle>
-            {initialProduct ? "Edit Produk" : "Tambah Produk"}
-          </IonTitle>
+          <IonTitle>{isEditMode ? "Edit Produk" : "Tambah Produk"}</IonTitle>
         </IonToolbar>
       </IonHeader>
+
       <IonContent className="ion-padding">
-        <form
-          onSubmit={handleSubmit(onSubmit, (err) =>
-            console.log("VALIDATION ERROR", err),
-          )}
-        >
-          <IonItem>
-            <IonLabel position="stacked">Nama Produk</IonLabel>
-            <Controller
-              control={control}
-              name="name"
-              render={({ field }) => (
-                <IonInput
-                  {...field}
-                  value={field.value}
-                  onIonChange={(e) => field.onChange(e.detail.value!)}
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Informasi Produk</IonCardTitle>
+          </IonCardHeader>
+
+          <IonCardContent>
+            <form>
+              {/* NAMA */}
+              <IonItem>
+                <IonLabel position="stacked">Nama</IonLabel>
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field }) => (
+                    <IonInput
+                      value={field.value}
+                      onIonChange={(e) => field.onChange(e.detail.value || "")}
+                    />
+                  )}
                 />
-              )}
-            />
-          </IonItem>
-          {errors.name && (
-            <p className="ion-text-error">{errors.name.message}</p>
-          )}
+              </IonItem>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-
-              if (!file) return;
-
-              setImageFile(file);
-
-              const objectUrl = URL.createObjectURL(file);
-              setPreview(objectUrl);
-            }}
-          />
-          {preview && <IonImg src={preview} />}
-
-          <IonItem>
-            <IonLabel position="stacked">Harga</IonLabel>
-            <Controller
-              control={control}
-              name="price"
-              render={({ field }) => (
-                <IonInput
-                  type="number"
-                  {...field}
-                  value={field.value}
-                  onIonChange={(e) => field.onChange(e.detail.value!)}
-                />
-              )}
-            />
-          </IonItem>
-          {errors.price && (
-            <p className="ion-text-error">{errors.price.message}</p>
-          )}
-
-          <IonItem>
-            <IonLabel position="stacked">Berat (gram)</IonLabel>
-            <Controller
-              control={control}
-              name="weight_grams"
-              render={({ field }) => (
-                <IonInput
-                  type="number"
-                  {...field}
-                  value={field.value}
-                  onIonChange={(e) => field.onChange(e.detail.value!)}
-                />
-              )}
-            />
-          </IonItem>
-          {errors.weight_grams && (
-            <p className="ion-text-error">{errors.weight_grams.message}</p>
-          )}
-
-          <IonItem>
-            <IonLabel position="stacked">Kategori</IonLabel>
-            <Controller
-              control={control}
-              name="category_id"
-              render={({ field }) => (
-                <IonSelect
-                  value={field.value}
-                  placeholder="Pilih Kategori"
-                  onIonChange={(e) => field.onChange(e.detail.value)}
-                >
-                  {categories.map((cat) => (
-                    <IonSelectOption key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              )}
-            />
-          </IonItem>
-          {errors.category_id && (
-            <p className="ion-text-error">{errors.category_id.message}</p>
-          )}
-
-          {subcategories.length > 0 && (
-            <IonItem>
-              <IonLabel position="stacked">Sub Kategori</IonLabel>
-              <Controller
-                control={control}
-                name="subcategory_id"
-                render={({ field }) => (
-                  <IonSelect
-                    value={field.value || ""}
-                    placeholder="Pilih Sub Kategori"
-                    onIonChange={(e) => field.onChange(e.detail.value)}
-                  >
-                    {subcategories.map((subcat) => (
-                      <IonSelectOption key={subcat.id} value={subcat.id}>
-                        {subcat.name}
-                      </IonSelectOption>
-                    ))}
-                  </IonSelect>
-                )}
+              {/* IMAGE */}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setImageFile(file);
+                  setPreview(URL.createObjectURL(file));
+                }}
               />
-            </IonItem>
-          )}
-
-          <IonItem lines="none">
-            <IonLabel position="stacked">Deskripsi Produk</IonLabel>
-
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-              {descriptions.map((desc: string, index: number) => (
-                <IonChip key={index}>
-                  <IonInput
-                    class="custom"
-                    value={desc}
-                    onIonChange={(e) =>
-                      updateDescription(index, e.detail.value || "")
-                    }
-                    placeholder="Isi deskripsi"
-                    // style={{ width: "120px" }}
-                  />
-                  <IonButton
-                    fill="clear"
-                    size="small"
-                    color="danger"
-                    onClick={() => removeDescription(index)}
+              {preview && (
+                <div onClick={() => fileRef.current?.click()}>
+                  <div
+                    style={{
+                      width: "100%",
+                      maxWidth: "300px",
+                      aspectRatio: "1 / 1",
+                      overflow: "hidden",
+                      borderRadius: "10px",
+                      marginTop: "12px",
+                      border: "1px solid #ddd",
+                    }}
                   >
-                    ✕
-                  </IonButton>
-                </IonChip>
-              ))}
+                    <IonImg
+                      src={preview}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
-              {/* Add Button Chip */}
-              <IonChip
-                outline
-                color="primary"
-                onClick={addDescription}
-                style={{ cursor: "pointer" }}
+              {/* CATEGORY */}
+              <IonItem>
+                <IonLabel position="stacked">Kategori</IonLabel>
+                <Controller
+                  control={control}
+                  name="category_id"
+                  defaultValue={initialCategory ?? null}
+                  render={({ field }) => (
+                    <IonSelect
+                      value={field.value ?? undefined}
+                      onIonChange={(e) => field.onChange(e.detail.value)}
+                    >
+                      {categories.map((c) => (
+                        <IonSelectOption key={c.id} value={c.id}>
+                          {c.name}
+                        </IonSelectOption>
+                      ))}
+                    </IonSelect>
+                  )}
+                />
+              </IonItem>
+
+              {/* DESCRIPTIONS */}
+              <IonItem lines="none">
+                <IonLabel position="stacked">Deskripsi Produk</IonLabel>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                  {descriptions.map((desc, index) => (
+                    <IonChip key={index}>
+                      <IonInput
+                        value={desc}
+                        onIonChange={(e) =>
+                          updateDescription(index, e.detail.value || "")
+                        }
+                        placeholder="Isi deskripsi"
+                      />
+                      <IonButton
+                        fill="clear"
+                        size="small"
+                        color="danger"
+                        onClick={() => removeDescription(index)}
+                      >
+                        ✕
+                      </IonButton>
+                    </IonChip>
+                  ))}
+
+                  <IonChip
+                    outline
+                    color="primary"
+                    onClick={addDescription}
+                    style={{ cursor: "pointer" }}
+                  >
+                    + Tambah
+                  </IonChip>
+                </div>
+              </IonItem>
+
+              <IonButton
+                expand="block"
+                disabled={loading}
+                onClick={handleSubmit(onSubmit)}
               >
-                + Tambah
-              </IonChip>
-            </div>
-          </IonItem>
+                {loading ? <IonSpinner /> : "Simpan Produk"}
+              </IonButton>
+            </form>
+          </IonCardContent>
+        </IonCard>
 
-          <IonButton expand="block" type="submit" disabled={loading}>
-            {loading ? (
-              <IonSpinner name="dots" />
-            ) : initialProduct ? (
-              "Simpan Perubahan"
-            ) : (
-              "Simpan Barang Baru"
-            )}
-          </IonButton>
-        </form>
+        {!productId && (
+          <IonText color="medium">
+            Simpan produk terlebih dahulu untuk menambah variant
+          </IonText>
+        )}
 
-        <IonAlert
-          isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={alertMessage.title}
-          message={alertMessage.message}
-          buttons={[{ text: "OK", role: "cancel" }]}
-        />
+        {productId && <ProductVariantSection productId={productId} />}
       </IonContent>
     </IonModal>
   );

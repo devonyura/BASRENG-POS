@@ -17,7 +17,7 @@ export interface SubCategoriesPayload {
   name: string;
 }
 
-export const getSubCategoriesbyCategory = async (id_category: string) => {
+export const getSubCategoriesbyCategory = async (id_category: number) => {
   try {
     // Ambil token JWT dari localStorage
     const TOKEN = Cookies.get("token");

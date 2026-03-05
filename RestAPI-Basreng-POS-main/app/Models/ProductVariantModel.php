@@ -11,7 +11,6 @@ class ProductVariantModel extends Model
 
   protected $allowedFields = [
     'product_id',
-    'variant_name',
     'weight_grams',
     'price'
   ];

@@ -3,74 +3,39 @@
 namespace App\Controllers;
 
 use App\Models\ProductVariantModel;
+use CodeIgniter\Config\Services;
+use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
+use Exception;
 
 class ProductVariantsController extends ResourceController
 {
   protected $modelName = ProductVariantModel::class;
   protected $format = 'json';
 
+
   public function index()
   {
-    $db = \Config\Database::connect();
+    try {
+      $data = $this->model->findAll();
+      if (empty($data)) {
 
-    $builder = $db->table('products p');
-
-    $builder->select("
-        p.id as product_id,
-        p.name,
-        p.img,
-        p.category_id,
-
-        pv.id as variant_id,
-        pv.weight_grams,
-        pv.price
-    ");
-
-    $builder->join(
-      'product_variants pv',
-      'pv.product_id = p.id',
-      'left'
-    );
-
-    $builder->orderBy('p.id', 'ASC');
-
-    $result = $builder->get()->getResultArray();
-
-    // ===============================
-    // GROUPING PRODUCTS -> VARIANTS
-    // ===============================
-
-    $products = [];
-
-    foreach ($result as $row) {
-
-      $pid = $row['product_id'];
-
-      if (!isset($products[$pid])) {
-        $products[$pid] = [
-          'id' => $pid,
-          'name' => $row['name'],
-          'img' => $row['img'],
-          'category_id' => $row['category_id'],
-          'variants' => []
-        ];
+        return $this->failNotFound('Tidak ada data produk.');
       }
 
-      // jika ada variant
-      if ($row['variant_id']) {
-        $products[$pid]['variants'][] = [
-          'variant_id' => $row['variant_id'],
-          'weight_grams' => $row['weight_grams'],
-          'price' => $row['price'],
-        ];
-      }
+      return $this->respond([
+        'status' => 'success',
+        'data'   => $data
+      ]);
+    } catch (Exception $e) {
+      return Services::response()
+        ->setJSON([
+          'status'  => 'error',
+          'message' => 'Terjadi kesalahan pada server.',
+          'error'   => $e->getMessage()
+        ])
+        ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
     }
-
-    return $this->respond([
-      'status' => 'success',
-      'data' => array_values($products)
-    ]);
   }
 
   public function create()
@@ -114,5 +79,69 @@ class ProductVariantsController extends ResourceController
       return $this->failNotFound('Detail Product Variant tidak ditemukan');
     }
     return $this->respond($data);
+  }
+
+  // PUT /product-variants/{id}
+  public function update($id = null)
+  {
+    $data = $this->request->getJSON(true);
+    // dd($data['weight_grams']);
+    if (!$data) {
+      return $this->fail("Invalid JSON", 400);
+    }
+
+    $updateData = [
+      'product_id'   => $data['product_id'] ?? null,
+      'weight_grams' => $data['weight_grams'] ?? null,
+      'price'        => $data['price'] ?? null,
+    ];
+
+    if (!$this->model->update($id, $updateData)) {
+      return $this->failValidationErrors($this->model->errors());
+    }
+
+    return $this->respond([
+      'status' => 'success',
+      'data' => $updateData
+    ]);
+  }
+
+  public function delete($id = null)
+  {
+    try {
+      $db = \Config\Database::connect();
+
+      // Cek apakah ProuductVariants ditemukan
+      if (!$this->model->find($id)) {
+        return $this->failNotFound('ProuductVariants tidak ditemukan.');
+      }
+
+      // Lanjut hapus ProuductVariants
+      if (!$this->model->delete($id)) {
+        return Services::response()
+          ->setJSON([
+            'status'  => 'error',
+            'message' => 'Gagal menghapus ProuductVariants.'
+          ])
+          ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
+      }
+
+
+      return Services::response()
+        ->setJSON([
+          'status'  => 'success',
+          'message' => 'ProuductVariants berhasil dihapus.'
+        ])
+        ->setStatusCode(200);
+    } catch (Exception $e) {
+
+      return Services::response()
+        ->setJSON([
+          'status'  => 'error',
+          'message' => 'Terjadi kesalahan pada server.',
+          'error'   => $e->getMessage()
+        ])
+        ->setStatusCode(ResponseInterface::HTTP_INTERNAL_SERVER_ERROR);
+    }
   }
 }

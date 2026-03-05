@@ -1,6 +1,27 @@
 import { BASE_API_URL, isApiOnline, checkOKResponse, ApiResponse } from "./restAPIRequest";
 import Cookies from "js-cookie";
 
+// Base field yang sama
+export interface BaseProductPayload {
+  category_id: number|null;
+  subcategory_id?: string | null;
+  name: string;
+  price: string;
+  weight_grams: string;
+  descriptions: string | null;
+}
+
+// Untuk CREATE
+export interface CreateProductPayload extends BaseProductPayload {
+  img?: File;
+}
+
+// Untuk UPDATE
+export interface UpdateProductPayload extends BaseProductPayload {
+  id: string;
+  img?: File | null;
+}
+
 export interface ProductVariant {
   variant_id: string;
   weight_grams: string;
@@ -15,30 +36,44 @@ export interface Product {
   variants: ProductVariant[];
 }
 
+
+export interface ProductWithVariant {
+  id: string;
+  name: string;
+  img: string | null;
+  category_id: string;
+  variants: ProductVariant[];
+}
+
+export interface CreateProductResponse {
+  message: string;
+  product: Product;
+}
+
 export interface ProductPayload {
   category_id: string;
-  subcategory_id: string | null;
+  subcategory_id: string | null |undefined;
   name: string;
   price: string;
   weight_grams: string;
-  descriptions: string | null;
+  descriptions: string | null | undefined;
   img?: File | null;
 }
 
-export interface UpdateProductPayload {
-  id: string;
-  category_id: string;
-  subcategory_id: string | null | undefined;
-  name: string;
-  img?: File | null;
-  price: string;
-  weight_grams: string;
-  descriptions: string | null;
-}
+// export interface UpdateProductPayload {
+//   id: string;
+//   category_id: string;
+//   subcategory_id: string | null | undefined;
+//   name: string;
+//   img?: File | null;
+//   price: string;
+//   weight_grams: string;
+//   descriptions: string | null;
+// }
 
 export const createProduct = async (
   productPayload: ProductPayload
-): Promise<ApiResponse> => {
+): Promise<CreateProductResponse> => {
 
   const TOKEN = Cookies.get("token");
 
@@ -61,11 +96,12 @@ export const createProduct = async (
     body: formData,
   });
 
+  console.log("formData:",formData)
   checkOKResponse(response);
 
   const data = await response.json();
 
-  return { success: true, data };
+  return { message: "true", product: data };
 };
 
 export const updateProduct = async (
@@ -146,7 +182,7 @@ export const deleteProduct = async (id: string): Promise<ApiResponse> => {
   });
 };
 
-export const getProducts = async (): Promise<Product[]> => {
+export const getProducts = async (): Promise<ProductWithVariant[]> => {
   try {
     // Ambil token JWT dari localStorage
     const TOKEN = Cookies.get("token");
@@ -158,7 +194,7 @@ export const getProducts = async (): Promise<Product[]> => {
     }
 
 
-    const url = `${BASE_API_URL}/api/product-variants`;
+    const url = `${BASE_API_URL}/api/products/get-with-variant`;
 
     // Konfigurasi request dengan header Authorization
     const response = await fetch(url, {
@@ -177,7 +213,7 @@ export const getProducts = async (): Promise<Product[]> => {
 
     return data.data;
 
-  } catch (error) {
+  } catch (error:any) {
     console.error("Error Fetching transactions", error);
     return error;
   }

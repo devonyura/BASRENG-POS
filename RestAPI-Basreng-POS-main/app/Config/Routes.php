@@ -55,6 +55,7 @@ $routes->group('api', ['filter' => 'auth'], function ($routes) {
   $routes->post('transactions/create-transaction', 'TransactionsController::createTransaction');
   $routes->post('transactions/get-receipt', 'TransactionsController::get_receipt');
 
+  $routes->get('products/get-with-variant', 'ProductsController::getWithVariant');
   $routes->resource('products', ['controller' => 'ProductsController']);
   $routes->post('products/update/(:num)', 'ProductsController::update/$1');
 

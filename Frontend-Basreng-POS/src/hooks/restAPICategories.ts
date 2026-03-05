@@ -2,7 +2,7 @@ import { BASE_API_URL, isApiOnline, checkOKResponse, ApiResponse } from "./restA
 import Cookies from "js-cookie";
 
 export interface Category {
-  id: string;
+  id: string|number;
   name: string;
 }
 

@@ -11,9 +11,7 @@ class ProductModel extends Model
   protected $allowedFields = [
     'category_id',
     'name',
-    'price',
     'descriptions',
-    'weight_grams',
     'img',
   ];
   protected $useTimestamps = true;

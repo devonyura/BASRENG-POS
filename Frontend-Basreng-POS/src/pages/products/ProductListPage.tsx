@@ -27,9 +27,10 @@ import {
   deleteProduct,
 } from "../../hooks/restAPIProducts";
 import { getCategories, Category } from "../../hooks/restAPICategories";
-import ProductForm, { AlertMessageProps } from "./ProductForm";
+import ProductForm from "./ProductForm";
 import "./ProductListPage.css";
 import { FILE_BASE_URL } from "../../hooks/restAPIRequest";
+import { AlertMessageProps } from "./PackageForm";
 
 const ProductListPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -37,9 +38,8 @@ const ProductListPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<
-    string | undefined
+    string | number | undefined
   >(undefined);
 
   const [showAlert, setShowAlert] = useState(false);
@@ -82,24 +82,23 @@ const ProductListPage: React.FC = () => {
     }
   };
 
-  const handleAdd = (categoryId?: string) => {
-    setEditingProduct(null);
-    setSelectedCategoryId(categoryId);
-    setShowModal(true);
-  };
+  // const handleAdd = (categoryId?: string) => {
+  //   setEditingProduct(null);
+  //   setSelectedCategoryId(categoryId);
+  //   setShowModal(true);
+  // };
 
   const handleEdit = (product: Product) => {
-    setEditingProduct(product);
+    // setEditingProduct(product);
     setShowModal(true);
   };
 
   const handleSuccess = () => {
-    const info = editingProduct ? "Diubah" : "Ditambah";
+    // const info = editingProduct ? "Diubah" : "Ditambah";
     setShowModal(false);
-    setEditingProduct(null);
     setSelectedCategoryId(undefined);
     fetchProducts();
-    setAlertMessage({ title: "Berhasil", message: `Produk Berhasil ${info}!` });
+    setAlertMessage({ title: "Berhasil", message: `Proses Berhasil!` });
     setShowAlert(true);
   };
 
@@ -128,6 +127,10 @@ const ProductListPage: React.FC = () => {
     }
   };
 
+  // ========= BAGIAN FORM/TOMBOL EDIT/TAMBAH
+  const [showForm, setShowForm] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+
   return (
     <IonPage>
       <IonHeader>
@@ -149,7 +152,7 @@ const ProductListPage: React.FC = () => {
                 .filter((product) => product.category_id === category.id)
                 .sort((a, b) => a.name.localeCompare(b.name));
               return (
-                <IonAccordion key={category.id} value={category.id}>
+                <IonAccordion key={category.id} value={String(category.id)}>
                   <IonItem slot="header">
                     <IonLabel>{category.name}</IonLabel>
                   </IonItem>
@@ -180,10 +183,13 @@ const ProductListPage: React.FC = () => {
                               ))
                             )}
                           </IonLabel>
+
                           <IonButton
                             fill="clear"
-                            slot="end"
-                            onClick={() => handleEdit(product)}
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setShowForm(true);
+                            }}
                           >
                             <IonIcon icon={pencil} />
                           </IonButton>
@@ -200,7 +206,11 @@ const ProductListPage: React.FC = () => {
                     </IonList>
                     <IonButton
                       expand="block"
-                      onClick={() => handleAdd(category.id)}
+                      onClick={() => {
+                        setSelectedProduct(null);
+                        setSelectedCategoryId(category.id);
+                        setShowForm(true);
+                      }}
                     >
                       Tambah {category.name}
                     </IonButton>
@@ -212,17 +222,12 @@ const ProductListPage: React.FC = () => {
         )}
 
         <ProductForm
-          isOpen={showModal}
-          initialProduct={editingProduct}
-          initialCategoryId={selectedCategoryId}
+          isOpen={showForm}
+          initialProduct={selectedProduct}
+          initialCategory={selectedCategoryId}
+          onDidDismiss={() => setShowForm(false)}
           onSuccess={handleSuccess}
-          onDidDismiss={() => {
-            setShowModal(false);
-            setEditingProduct(null);
-            setSelectedCategoryId(undefined);
-          }}
         />
-
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}
