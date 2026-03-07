@@ -1,37 +1,21 @@
+// conponents/ProductCards.tsx
 import React from "react";
-import {
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonButton,
-  IonIcon,
-  IonChip,
-  IonLabel,
-} from "@ionic/react";
-import {
-  add,
-  atCircleOutline,
-  checkbox,
-  checkmarkCircleOutline,
-  closeCircle,
-  remove,
-  trashBin,
-} from "ionicons/icons";
-import {
-  rupiahFormat,
-  formatProductName,
-  parseWeightGrams,
-} from "../hooks/formatting";
+import { IonCard, IonCardContent, IonButton, IonText } from "@ionic/react";
+
+import { rupiahFormat, parseWeightGrams } from "../hooks/formatting";
 import { DataProduct } from "../hooks/restAPIRequest";
 
 // Redux
 import { useDispatch, useSelector } from "react-redux";
-import { addToCart, updateQty, removeFromCart } from "../redux/cartSlice";
+import {
+  addToCart,
+  updateQty,
+  removeFromCart,
+  CartItem,
+} from "../redux/cartSlice";
 import { RootState } from "../redux/store";
+
+import "./ProductCard.css";
 
 interface ProductCardProps {
   product: DataProduct;
@@ -41,122 +25,129 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const dispatch = useDispatch();
   const cartItems = useSelector((state: RootState) => state.cart.items);
 
-  const itemInCart = cartItems.find((item) => item.id === product.id);
-  const quantity = itemInCart?.quantity ?? 0;
-  const subtotal = itemInCart?.subtotal ?? 0;
-  const parsedWeightGrams = parseWeightGrams(product.weight_grams);
-  const weightGrams = parsedWeightGrams ?? 500;
+  const subtotal = cartItems
+    .filter((i) => i.product_id === product.id)
+    .reduce((sum, i) => sum + i.subtotal, 0);
 
-  const ensureItemInCart = (qty: number) => {
-    if (!itemInCart) {
-      dispatch(
-        addToCart({
-          id: product.id,
-          name: product.name,
-          price: Number(product.price),
-          quantity: qty,
-          descriptions: product.descriptions,
-          subtotal: Number(product.price),
-          weight_grams: weightGrams,
-        }),
-      );
-    }
+  const addVariant = (variant: any) => {
+    dispatch(
+      addToCart({
+        variant_id: variant.variant_id,
+        product_id: product.id,
+        name: product.name,
+        price: variant.price,
+        quantity: 1,
+        descriptions: product.descriptions,
+        weight_grams: variant.weight_grams,
+        subtotal: variant.price,
+      }),
+    );
   };
 
-  const handleAdd = () => {
-    ensureItemInCart(1);
-    dispatch(updateQty({ id: product.id, quantity: quantity + 1 }));
+  const increase = (variant_id: number) => {
+    const item = cartItems.find((i) => i.variant_id === variant_id);
+    if (!item) return;
+
+    dispatch(
+      updateQty({
+        variant_id,
+        quantity: item.quantity + 1,
+      }),
+    );
   };
 
-  const handleAutoSet = (qty: number) => {
-    ensureItemInCart(qty);
-    dispatch(updateQty({ id: product.id, quantity: qty }));
+  const decrease = (variant_id: number) => {
+    const item = cartItems.find((i) => i.variant_id === variant_id);
+    if (!item) return;
+
+    dispatch(
+      updateQty({
+        variant_id,
+        quantity: item.quantity - 1,
+      }),
+    );
   };
 
-  const handleRemove = () => {
-    dispatch(updateQty({ id: product.id, quantity: quantity - 1 }));
+  const remove = (variant_id: number) => {
+    dispatch(removeFromCart(variant_id));
   };
 
-  const handleReset = () => {
-    dispatch(removeFromCart(product.id));
-  };
+  // MapLookup cartMap
+  const cartMap = React.useMemo(() => {
+    const map: Record<number, CartItem> = {};
+    cartItems.forEach((i) => {
+      map[i.variant_id] = i;
+    });
+    return map;
+  }, [cartItems]);
 
   return (
-    <IonCard>
-      <IonGrid>
-        <IonCardHeader>
-          <IonCardTitle>
-            {formatProductName(product.name, product.weight_grams)}
-          </IonCardTitle>
-        </IonCardHeader>
-        <IonCardContent>
-          {product.descriptions && (
-            <div>
-              {product.descriptions.split(",").map((desc) => (
-                <IonChip outline>
-                  <IonIcon icon={checkmarkCircleOutline} color="success" />
-                  <IonLabel>{desc}</IonLabel>
-                </IonChip>
-              ))}
+    <IonCard className="product-card">
+      {/* IMAGE */}
+      <img
+        src={`http://localhost:8080/uploads/products/${product.img}`}
+        className="product-img"
+      />
+
+      <IonCardContent>
+        {/* NAME */}
+        <IonText className="product-title">{product.name}</IonText>
+
+        {/* VARIANTS */}
+        {product?.variants?.map((v) => {
+          const item = cartMap[v.variant_id];
+          const qty = item?.quantity ?? 0;
+
+          return (
+            <div key={`${product.id}-${v.variant_id}`} className="variant-row">
+              <div className="variant-info">
+                <span className="chip">{parseWeightGrams(v.weight_grams)}</span>
+
+                <span className="chip">{rupiahFormat(v.price)}</span>
+              </div>
+
+              {qty === 0 ? (
+                <IonButton size="small" onClick={() => addVariant(v)}>
+                  +
+                </IonButton>
+              ) : (
+                <div className="qty-control">
+                  <IonButton
+                    size="small"
+                    onClick={() => decrease(v.variant_id)}
+                  >
+                    -
+                  </IonButton>
+
+                  <span>{qty}</span>
+
+                  <IonButton
+                    size="small"
+                    onClick={() => increase(v.variant_id)}
+                  >
+                    +
+                  </IonButton>
+
+                  <IonButton
+                    color="danger"
+                    size="small"
+                    onClick={() => remove(v.variant_id)}
+                  >
+                    x
+                  </IonButton>
+                </div>
+              )}
             </div>
-          )}
-          <div className="amount price">
-            <p>
-              Harga: <span>{rupiahFormat(product.price)}</span>
-            </p>
-          </div>
-          <div className="amount">
-            <p>Qty:</p>
-            <IonButton shape="round" size="small" onClick={handleRemove}>
-              <IonIcon slot="icon-only" icon={remove}></IonIcon>
-            </IonButton>
-            {quantity}
-            <IonButton shape="round" size="small" onClick={handleAdd}>
-              <IonIcon slot="icon-only" icon={add}></IonIcon>
-            </IonButton>
-            <IonButton
-              shape="round"
-              size="small"
-              color="danger"
-              onClick={handleReset}
-            >
-              <IonIcon slot="icon-only" icon={trashBin}></IonIcon>
-            </IonButton>
-          </div>
-          {!product.descriptions && (
-            <div className="amount">
-              <IonButton
-                shape="round"
-                size="small"
-                onClick={() => handleAutoSet(3)}
-              >
-                3
-              </IonButton>
-              <IonButton
-                shape="round"
-                size="small"
-                onClick={() => handleAutoSet(6)}
-              >
-                6
-              </IonButton>
-              <IonButton
-                shape="round"
-                size="small"
-                onClick={() => handleAutoSet(12)}
-              >
-                12
-              </IonButton>
-            </div>
-          )}
-          <div className="amount price">
-            <p>
-              Subtotal: <span>{rupiahFormat(subtotal)}</span>
-            </p>
-          </div>
-        </IonCardContent>
-      </IonGrid>
+          );
+        })}
+
+        {/* SUBTOTAL */}
+        {subtotal > 0 && (
+          <div className="subtotal">SubTotal: {rupiahFormat(subtotal)}</div>
+        )}
+      </IonCardContent>
     </IonCard>
   );
 };
 
-export default ProductCard;
+export default React.memo(ProductCard);

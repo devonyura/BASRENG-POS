@@ -1,0 +1,50 @@
+.product-card {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.product-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.product-title {
+  font-size: 20px;
+  font-weight: 600;
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.variant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.variant-info {
+  display: flex;
+  gap: 8px;
+}
+
+.chip {
+  border: 2px solid #000;
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-weight: 500;
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.subtotal {
+  margin-top: 10px;
+  font-weight: bold;
+  font-size: 18px;
+}

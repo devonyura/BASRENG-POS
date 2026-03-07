@@ -11,14 +11,20 @@ export interface ApiResponse {
 	error?: string;
 }
 
+export interface ProductVariant {
+  variant_id: number
+  product_id: number
+  weight_grams: number
+  price: number
+}
+
 export interface DataProduct {
-	id: string;
-	category_id: string;
-	subcategory_id: string;
-	descriptions: string;
-	name: string;
-	price: string;
-	weight_grams: string | number;
+  id: number
+  name: string
+  category_id: number
+  descriptions?: string
+  img?: string
+  variants?: ProductVariant[]
 }
 
 export interface Categories {
@@ -192,7 +198,7 @@ export const getDataProducts = async () => {
 		}
 
 		// Konfigurasi request dengan header Authorization
-		const response = await fetch(`${BASE_API_URL}/api/products`, {
+		const response = await fetch(`${BASE_API_URL}/api/products/get-with-variant`, {
 			method: "GET",
 			credentials: "include",
 			headers: {

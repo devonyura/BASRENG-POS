@@ -1,27 +1,19 @@
 import {
-  IonButton,
   IonContent,
   IonHeader,
   IonPage,
   IonTitle,
   IonToolbar,
   IonSegment,
-  IonIcon,
   IonLabel,
   IonSegmentButton,
-  IonSegmentContent,
-  IonSegmentView,
   useIonViewWillEnter,
-  IonAccordion,
-  IonAccordionGroup,
-  IonItem,
   IonAlert,
-  IonSpinner,
 } from "@ionic/react";
 
 // State, History etc
-import { useState, useEffect, useCallback } from "react";
-import { useHistory, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useHistory } from "react-router-dom";
 
 // hooks
 import { useAuth } from "../../hooks/useAuthCookie";
@@ -92,13 +84,6 @@ const KasirPage: React.FC = () => {
   // No Internet Connection Alert
   const [isNoInternetOpen, setIsNoInternetOpen] = useState(false);
 
-  // cek kategori
-  const filteredSubCategories = subCategories.filter(
-    (sub) => sub.id_categories === selectedCategory,
-  );
-
-  const hasSubCategories = filteredSubCategories.length > 0;
-
   // === Loading section
   const [isAppLoading, setIsAppLoading] = useState(true);
 
@@ -155,42 +140,15 @@ const KasirPage: React.FC = () => {
           ))}
         </IonSegment>
 
-        {hasSubCategories ? (
-          <div className="">
-            <IonAccordionGroup>
-              {subCategories
-                .filter((sub) => sub.id_categories === selectedCategory)
-                .map((sub) => (
-                  <IonAccordion key={sub.id} value={sub.id}>
-                    <IonItem slot="header">
-                      <IonLabel>{sub.name}</IonLabel>
-                    </IonItem>
-                    <div className="ion-padding" slot="content">
-                      {products
-                        .filter(
-                          (product) =>
-                            product.category_id === selectedCategory &&
-                            product.name
-                              .toLowerCase()
-                              .includes(sub.name.toLowerCase()),
-                        )
-                        .map((product) => (
-                          <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
-                  </IonAccordion>
-                ))}
-            </IonAccordionGroup>
-          </div>
-        ) : (
-          <div className="ion-padding">
-            {products
-              .filter((product) => product.category_id === selectedCategory)
-              .map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-          </div>
-        )}
+        <div className="ion-padding">
+          {products
+            .filter(
+              (product) => String(product.category_id) === selectedCategory,
+            )
+            .map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+        </div>
 
         {/* Detail Order Component */}
         <DetailOrder />

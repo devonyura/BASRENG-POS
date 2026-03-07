@@ -56,6 +56,8 @@ import {
 } from "../../hooks/formatting";
 import React from "react";
 
+//
+
 const DetailOrder: React.FC = () => {
   // untuk reset Cart
   const dispatch = useDispatch();
@@ -405,10 +407,6 @@ const DetailOrder: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
-          {cartItems.map((product) => (
-            <ProductCartItem key={product.id} product={product} />
-          ))}
-
           <div className="input-method">
             <IonList>
               <IonItem>
