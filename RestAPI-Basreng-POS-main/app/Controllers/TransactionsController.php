@@ -339,7 +339,7 @@ class TransactionsController extends ResourceController
     if (!$data) {
       return $this->fail("Invalid JSON Format", 400);
     }
-
+    // return ($data);
     // Validasi awal
     if (!isset($data['transaction']) || !isset($data['transaction_details'])) {
       return $this->failValidationErrors('Data transaksi atau detail transaksi tidak ditemukan.');
@@ -382,14 +382,20 @@ class TransactionsController extends ResourceController
       'reseller_id'      => $transaction['reseller_id'] ?? null,
       'transaction_type' => $transaction['transaction_type'] ?? null,
       'shopee_code'      => $transaction['shopee_code'] ?? null,
+      'is_reseller'      => $data['is_reseller'] ?? null,
     ];
 
     // Mulai database transaction
     $db->transBegin();
 
     try {
-      log_message('debug', json_encode($transactionData));
-      // Simpan transaksi utama
+
+      // Apply Discount
+      $discountData = $this->calculateResellerDiscount($details, $transactionData['is_reseller']);
+      $discount = $discountData['discount'];
+      $totalAfterDiscount = $transactionData['total_price'] - $discount;
+      $transactionData['total_price'] = $totalAfterDiscount;
+
       $transactionModel->insert($transactionData);
       $transactionId = $transactionModel->getInsertID();
 

@@ -38,10 +38,12 @@ interface ReceiptProps {
   };
   cartItems: CartItem[];
   receiptNoteNumber: string | null;
-  discount: number | string;
+  discount: number;
   is_reseller: boolean;
   isShopeeOrder: boolean;
   shopeeCode: string | null | undefined;
+  paymentMethod: string | null | undefined;
+  totalBeforeDiscount: number;
   // branchData: BranchData | null;
 }
 
@@ -64,6 +66,8 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
     is_reseller,
     isShopeeOrder,
     shopeeCode,
+    paymentMethod,
+    totalBeforeDiscount,
   } = props;
 
   const { username, branchData } = useAuth();
@@ -118,6 +122,20 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
               )}
             </React.Fragment>
           ))}
+          <tr>
+            <td className="tr-title" colSpan={3}>
+              Pembayaran
+            </td>
+            <td className="tr-title">{paymentMethod}</td>
+          </tr>
+          <tr>
+            <td className="tr-title" colSpan={3}>
+              Total
+            </td>
+            <td className="tr-title">
+              {rupiahFormat(totalBeforeDiscount, false)}
+            </td>
+          </tr>
           {is_reseller && (
             <tr>
               <td className="tr-title" colSpan={3}>
@@ -126,12 +144,14 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
               <td className="tr-title">-{rupiahFormat(discount, false)}</td>
             </tr>
           )}
-          <tr>
-            <td className="tr-title" colSpan={3}>
-              Total
-            </td>
-            <td className="tr-title">{rupiahFormat(total, false)}</td>
-          </tr>
+          {is_reseller && (
+            <tr>
+              <td className="tr-title" colSpan={3}>
+                Total (diskon)
+              </td>
+              <td className="tr-title">{rupiahFormat(total, false)}</td>
+            </tr>
+          )}
           <tr>
             <td colSpan={3}>Tunai</td>
             <td>{rupiahFormat(cash, false)}</td>

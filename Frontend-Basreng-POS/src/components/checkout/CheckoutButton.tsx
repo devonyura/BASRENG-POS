@@ -5,18 +5,23 @@ interface Props {
   isSubmitting: boolean;
   cashGiven: number | null;
   onCheckout: () => void;
+  paymentMethod: string;
 }
 
 const CheckoutButton: React.FC<Props> = ({
   isSubmitting,
   cashGiven,
   onCheckout,
+  paymentMethod,
 }) => {
+  console.log("cashGiven:", cashGiven);
   return (
     <IonButton
       expand="block"
       onClick={onCheckout}
-      disabled={isSubmitting || cashGiven === null || cashGiven === 0}
+      disabled={
+        paymentMethod === "cash" && (cashGiven === 0 || cashGiven === null)
+      }
     >
       Selesaikan Transaksi
     </IonButton>

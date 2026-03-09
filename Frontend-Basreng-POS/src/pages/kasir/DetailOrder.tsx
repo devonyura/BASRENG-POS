@@ -247,7 +247,7 @@ const DetailOrder: React.FC = () => {
         transaction_code: generateReceiptNumber(Number(branchID), username),
         user_id: Number(idUser),
         date_time: formattedDateTime,
-        total_price: total,
+        total_price: totalBeforeDiscount,
         cash_amount: cash_amounts,
         change_amount: change,
         payment_method: paymentMethod,
@@ -398,8 +398,7 @@ const DetailOrder: React.FC = () => {
             <IonButtons slot="start">
               <IonButton
                 onClick={() => {
-                  setAlertBeforeSubmit(true);
-                  setIsResetButton(true);
+                  modal.current?.dismiss();
                 }}
               >
                 Kembali
@@ -412,7 +411,7 @@ const DetailOrder: React.FC = () => {
           <CartItemList items={cartItems} />
           <div className="input-method">
             <IonList>
-              <OrderSummary total={total} discount={discount} />
+              <OrderSummary total={totalBeforeDiscount} discount={discount} />
 
               <ResellerSelect
                 resellers={resellers}
@@ -482,11 +481,14 @@ const DetailOrder: React.FC = () => {
             is_reseller={isReseller}
             isShopeeOrder={isShopeeOrder}
             shopeeCode={shopeeCode}
+            paymentMethod={paymentMethod}
+            totalBeforeDiscount={totalBeforeDiscount}
           ></Receipt>
           <CheckoutButton
             isSubmitting={isSubmitting}
             cashGiven={cashGiven}
             onCheckout={() => setAlertBeforeSubmit(true)}
+            paymentMethod={paymentMethod}
           />
           <div className="space"></div>
         </IonContent>
