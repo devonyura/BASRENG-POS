@@ -20,6 +20,7 @@ import { getBranch } from "../hooks/restAPIRequest";
 import { useAuth } from "../hooks/useAuthCookie";
 import "./Receipt.css";
 import { textAlign } from "html2canvas/dist/types/css/property-descriptors/text-align";
+import { CartItem } from "../../src/redux/cartSlice";
 
 interface ReceiptProps {
   // branch: string[];
@@ -35,14 +36,7 @@ interface ReceiptProps {
     address: string;
     notes: string;
   };
-  cartItems: {
-    id: string;
-    name: string;
-    price: number;
-    descriptions: string;
-    quantity: number;
-    weight_grams?: number;
-  }[];
+  cartItems: CartItem[];
   receiptNoteNumber: string | null;
   discount: number | string;
   is_reseller: boolean;
@@ -109,8 +103,8 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
         </thead>
         <tbody>
           {cartItems.map((item) => (
-            <>
-              <tr key={item.id}>
+            <React.Fragment key={item.variant_id}>
+              <tr key={item.variant_id}>
                 <td>{formatProductName(item.name, item.weight_grams)}</td>
                 <td className="small-text">{item.quantity}x</td>
                 <td>{rupiahFormat(item.price, false)}</td>
@@ -122,7 +116,7 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
                   <td colSpan={3}>{item.descriptions}</td>
                 </tr>
               )}
-            </>
+            </React.Fragment>
           ))}
           {is_reseller && (
             <tr>

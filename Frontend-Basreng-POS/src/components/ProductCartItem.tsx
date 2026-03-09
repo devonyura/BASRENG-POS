@@ -7,54 +7,41 @@ import {
   IonIcon,
   IonItem,
 } from "@ionic/react";
+
 import { add, remove, trashBin } from "ionicons/icons";
-import {
-  rupiahFormat,
-  formatProductName,
-  parseWeightGrams,
-} from "../hooks/formatting";
-// Redux
-import { useDispatch, useSelector } from "react-redux";
-import { addToCart, updateQty, removeFromCart } from "../redux/cartSlice";
-import { RootState } from "../redux/store";
 
-const ProductCartItem: React.FC<any> = ({ product }) => {
+import { rupiahFormat, formatProductName } from "../hooks/formatting";
+
+import { useDispatch } from "react-redux";
+import { updateQty, removeFromCart, CartItem } from "../redux/cartSlice";
+
+interface ProductCartItemProps {
+  item: CartItem;
+}
+
+const ProductCartItem: React.FC<ProductCartItemProps> = ({ item }) => {
   const dispatch = useDispatch();
-  const cartItems = useSelector((state: RootState) => state.cart.items);
-
-  const itemInCart = cartItems.find((item) => item.id === product.id);
-  const quantity = itemInCart?.quantity ?? 0;
-  const subtotal = itemInCart?.subtotal ?? 0;
-
-  const ensureItemInCart = (qty: number) => {
-    if (!itemInCart) {
-      const parsedWeightGrams = parseWeightGrams(product.weight_grams);
-      const weightGrams = parsedWeightGrams ?? 500;
-      dispatch(
-        addToCart({
-          id: product.id,
-          name: product.name,
-          price: Number(product.price),
-          descriptions: product.descriptions,
-          quantity: qty,
-          subtotal: Number(product.price),
-          weight_grams: weightGrams,
-        }),
-      );
-    }
-  };
 
   const handleAdd = () => {
-    ensureItemInCart(1);
-    dispatch(updateQty({ id: product.id, quantity: quantity + 1 }));
+    dispatch(
+      updateQty({
+        variant_id: item.variant_id,
+        quantity: item.quantity + 1,
+      }),
+    );
   };
 
   const handleRemove = () => {
-    dispatch(updateQty({ id: product.id, quantity: quantity - 1 }));
+    dispatch(
+      updateQty({
+        variant_id: item.variant_id,
+        quantity: item.quantity - 1,
+      }),
+    );
   };
 
   const handleReset = () => {
-    dispatch(removeFromCart(product.id));
+    dispatch(removeFromCart(item.variant_id));
   };
 
   return (
@@ -63,24 +50,30 @@ const ProductCartItem: React.FC<any> = ({ product }) => {
         <IonRow>
           <IonCol size="9">
             <div className="amount title">
-              <b>{formatProductName(product.name, product.weight_grams)}</b>
+              <b>{formatProductName(item.name, item.weight_grams)}</b>
             </div>
+
             <div className="amount subtotal">
               <p>
-                Subtotal : <b>{rupiahFormat(subtotal)}</b>
+                Subtotal : <b>{rupiahFormat(item.subtotal)}</b>
               </p>
             </div>
+
             <div className="amount">
               <p>Qty:</p>
+
               <IonButton shape="round" size="default" onClick={handleRemove}>
                 <IonIcon slot="icon-only" icon={remove}></IonIcon>
               </IonButton>
-              <span>{quantity}</span>
+
+              <span>{item.quantity}</span>
+
               <IonButton shape="round" size="default" onClick={handleAdd}>
                 <IonIcon slot="icon-only" icon={add}></IonIcon>
               </IonButton>
             </div>
           </IonCol>
+
           <IonCol class="col-trash" size="3">
             <IonButton
               shape="round"
@@ -97,4 +90,4 @@ const ProductCartItem: React.FC<any> = ({ product }) => {
   );
 };
 
-export default ProductCartItem;
+export default React.memo(ProductCartItem);

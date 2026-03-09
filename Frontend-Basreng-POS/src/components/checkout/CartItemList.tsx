@@ -10,10 +10,10 @@ const CartItemList: React.FC<Props> = ({ items }) => {
   return (
     <>
       {items.map((item) => (
-        <ProductCartItem key={item.variant_id} product={item} />
+        <ProductCartItem key={item.variant_id} item={item} />
       ))}
     </>
   );
 };
 
-export default CartItemList;
+export default React.memo(CartItemList);

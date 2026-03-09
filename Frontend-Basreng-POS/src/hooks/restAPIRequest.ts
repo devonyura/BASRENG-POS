@@ -54,6 +54,7 @@ export interface TransactionPayload {
 interface Transaction {
 	transaction_code: string;
 	user_id: number;
+	branch_id: number;
 	date_time: string,
 	total_price: number;
 	cash_amount: number | null;
@@ -64,7 +65,6 @@ interface Transaction {
 	customer_address: string | null;
 	customer_phone: string | null;
 	notes: string | null;
-	branch_id: number;
 	reseller_id: number|null;
 	transaction_type: string|null;
 	shopee_code: string|null|undefined;
@@ -72,6 +72,7 @@ interface Transaction {
 
 interface TransactionDetails {
 	product_id: number;
+	variant_id: number;
 	quantity: number;
 	price: number;
 	subtotal: number;

@@ -388,17 +388,28 @@ class TransactionsController extends ResourceController
     $db->transBegin();
 
     try {
+      log_message('debug', json_encode($transactionData));
       // Simpan transaksi utama
       $transactionModel->insert($transactionData);
       $transactionId = $transactionModel->getInsertID();
 
+      if (empty($details)) {
+        return $this->failValidationErrors("Detail transaksi kosong.");
+      }
+
       // Simpan detail transaksi
       foreach ($details as $item) {
 
-        $variant = $this->db->table('product_variants')
+        $query = $db->table('product_variants')
           ->where('id', $item['variant_id'])
-          ->get()
-          ->getRowArray();
+          ->get();
+
+        if (!$query) {
+          throw new \Exception($db->error()['message']);
+        }
+
+        $variant = $query->getRowArray();
+
 
         if (!$variant) {
           throw new \Exception("Variant tidak ditemukan");
