@@ -21,10 +21,7 @@ import { useAuth } from "../hooks/useAuthCookie";
 import "./Receipt.css";
 import { textAlign } from "html2canvas/dist/types/css/property-descriptors/text-align";
 
-interface ReceiptProps {
-  // branch: string[];
-  // cashierName: string;
-  // receiptNumber: string;
+interface ReceiptHistoryProps {
   username: string;
   cash: number;
   change: number;
@@ -37,18 +34,19 @@ interface ReceiptProps {
     notes: string;
   };
   cartItems: {
-    id: string;
+    variant_id: string;
     name: string;
     price: number;
+    subtotal: number;
     quantity: number;
     weight_grams?: number;
+    descriptions: string;
   }[];
   receiptNoteNumber: string | null;
   discount: number | string;
   is_reseller: boolean;
   isShopeeOrder: boolean;
   shopeeCode: string | null | undefined;
-  // branchData: BranchData | null;
 }
 
 export interface BranchData {
@@ -57,160 +55,180 @@ export interface BranchData {
   branch_address: string;
 }
 
-const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
-  const {
-    username,
-    cash,
-    change,
-    total,
-    isOnlineOrders,
-    customerInfo,
-    cartItems,
-    receiptNoteNumber,
-    discount,
-    is_reseller,
-    isShopeeOrder,
-    shopeeCode,
-  } = props;
+const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
+  (props, ref) => {
+    const {
+      username,
+      cash,
+      change,
+      total,
+      isOnlineOrders,
+      customerInfo,
+      cartItems,
+      receiptNoteNumber,
+      discount,
+      is_reseller,
+      isShopeeOrder,
+      shopeeCode,
+    } = props;
 
-  const { branchData } = useAuth();
-  console.log("Detail Transaction:", props);
+    const { branchData } = useAuth();
+    console.log("Detail Transaction:", props);
 
-  // const [branchDataState] = useState<BranchData | null>(branchData);
+    // const [branchDataState] = useState<BranchData | null>(branchData);
 
-  return (
-    <div className="receipt-container" ref={ref}>
-      <table className="receipt">
-        <thead>
-          <tr className="receipt-title">
-            <th colSpan={4}>- BASRENG GHOSTING {branchData?.branch_name} -</th>
-          </tr>
-          <tr className="receipt-title">
-            <th colSpan={4}>
-              {branchData?.branch_address
-                ? `- ${branchData.branch_address} -`
-                : "- Jalan ? -"}
-            </th>
-          </tr>
-          <tr>
-            <th colSpan={4}>
-              <span></span>
-            </th>
-          </tr>
-          <tr>
-            <th className="small-text" colSpan={3}>
-              NO: {receiptNoteNumber}
-            </th>
-            <th>Kasir: {username}</th>
-          </tr>
-          <tr>
-            <th colSpan={4}>
-              <span></span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {cartItems.map((item) => (
-            <tr key={item.id}>
-              <td>{formatProductName(item.name, item.weight_grams)}</td>
-              <td className="small-text">{item.quantity}x</td>
-              <td>{rupiahFormat(item.price, false)}</td>
-              <td>{rupiahFormat(item.price * item.quantity, false)}</td>
+    return (
+      <div className="receipt-container" ref={ref}>
+        <table className="receipt">
+          <thead>
+            <tr className="receipt-title">
+              <th colSpan={4}>
+                - BASRENG GHOSTING {branchData?.branch_name} -
+              </th>
             </tr>
-          ))}
-          {is_reseller && (
+            <tr className="receipt-title">
+              <th colSpan={4}>
+                {branchData?.branch_address
+                  ? `- ${branchData.branch_address} -`
+                  : "- Jalan ? -"}
+              </th>
+            </tr>
+            <tr>
+              <th colSpan={4}>
+                <span></span>
+              </th>
+            </tr>
+            <tr>
+              <th className="small-text" colSpan={3}>
+                NO: {receiptNoteNumber}
+              </th>
+              <th>Kasir: {username}</th>
+            </tr>
+            <tr>
+              <th colSpan={4}>
+                <span></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {cartItems.map((item) => (
+              <React.Fragment key={item.variant_id}>
+                <tr>
+                  <td>{formatProductName(item.name, item.weight_grams)}</td>
+                  <td className="small-text">{item.quantity}x</td>
+                  <td>{rupiahFormat(item.price, false)}</td>
+                  <td>{rupiahFormat(item.subtotal, false)}</td>
+                </tr>
+
+                {item.descriptions && (
+                  <tr>
+                    <td>Isi paket</td>
+                    <td colSpan={3}>{item.descriptions}</td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+
+            {is_reseller && (
+              <tr>
+                <td className="tr-title" colSpan={3}>
+                  Potongan Reseller
+                </td>
+                <td className="tr-title">
+                  -{rupiahFormat(Number(discount), false)}
+                </td>
+              </tr>
+            )}
+
             <tr>
               <td className="tr-title" colSpan={3}>
-                Potongan Reseller
+                Total
               </td>
-              <td className="tr-title">-{rupiahFormat(discount, false)}</td>
+              <td className="tr-title">{rupiahFormat(total, false)}</td>
             </tr>
-          )}
-          <tr>
-            <td className="tr-title" colSpan={3}>
-              Total
-            </td>
-            <td className="tr-title">{rupiahFormat(total, false)}</td>
-          </tr>
-          <tr>
-            <td colSpan={3}>Tunai</td>
-            <td>{rupiahFormat(cash, false)}</td>
-          </tr>
-          <tr>
-            <td colSpan={3}>Kembalian</td>
-            <td>{rupiahFormat(change, false)}</td>
-          </tr>
-          {isOnlineOrders && (
-            <>
-              <tr className="online-order-receipt tr-title ">
-                <td colSpan={3} className="tr-title">
-                  Pemesan
+
+            <tr>
+              <td colSpan={3}>Tunai</td>
+              <td>{rupiahFormat(cash, false)}</td>
+            </tr>
+
+            <tr>
+              <td colSpan={3}>Kembalian</td>
+              <td>{rupiahFormat(change, false)}</td>
+            </tr>
+
+            {isOnlineOrders && (
+              <>
+                <tr className="online-order-receipt tr-title ">
+                  <td colSpan={3} className="tr-title">
+                    Pemesan
+                  </td>
+                  <td>{customerInfo.name}</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="tr-title">
+                    No WA/HP
+                  </td>
+                  <td>{customerInfo.phone}</td>
+                </tr>
+                <tr>
+                  <td colSpan={4} className="text-left tr-title">
+                    Alamat:
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={4} className="text-left">
+                    {customerInfo.address}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={4} className="text-left tr-title">
+                    Catatan Tambahan:
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={4} className="text-left">
+                    {customerInfo.notes}
+                  </td>
+                </tr>
+              </>
+            )}
+          </tbody>
+          <tfoot>
+            {isShopeeOrder && (
+              <tr className="shopee-code">
+                <td colSpan={4}>
+                  <span>{shopeeCode}</span>
                 </td>
-                <td>{customerInfo.name}</td>
               </tr>
-              <tr>
-                <td colSpan={3} className="tr-title">
-                  No WA/HP
-                </td>
-                <td>{customerInfo.phone}</td>
-              </tr>
-              <tr>
-                <td colSpan={4} className="text-left tr-title">
-                  ALamat:
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={4} className="text-left">
-                  {customerInfo.address}
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={4} className="text-left tr-title">
-                  Catatan Tambahan:
-                </td>
-              </tr>
-              <tr>
-                <td colSpan={4} className="text-left">
-                  {customerInfo.notes}
-                </td>
-              </tr>
-            </>
-          )}
-        </tbody>
-        <tfoot>
-          {isShopeeOrder && (
-            <tr className="shopee-code">
+            )}
+            <tr>
+              <td colSpan={3}>Tgl. 28-10-2025</td>
+              <td>Cabang: {branchData?.branch_name}</td>
+            </tr>
+            <tr>
+              <td colSpan={4} className="info">
+                <p>- Menjual Berbagai cemilan pedas -</p>
+                <p>- mochi & sushi -</p>
+                <p>Selamat Menikmati :) </p>
+                <p>PESANAN SUDAH DISTRUK TIDAK DAPAT DIKEMBALIKAN</p>
+              </td>
+            </tr>
+            <tr>
               <td colSpan={4}>
-                <span>{shopeeCode}</span>
+                <p>
+                  <i>BASRENG POS v.1.1</i>
+                </p>
+                <p>
+                  <i>App by Devon Yura Interactive Software House</i>
+                </p>
               </td>
             </tr>
-          )}
-          <tr>
-            <td colSpan={3}>Tgl. 28-10-2025</td>
-            <td>Cabang: {branchData?.branch_name}</td>
-          </tr>
-          <tr>
-            <td colSpan={4} className="info">
-              <p>- Menjual Berbagai cemilan pedas -</p>
-              <p>- mochi & sushi -</p>
-              <p>Selamat Menikmati :) </p>
-              <p>PESANAN SUDAH DISTRUK TIDAK DAPAT DIKEMBALIKAN</p>
-            </td>
-          </tr>
-          <tr>
-            <td colSpan={4}>
-              <p>
-                <i>BASRENG POS v.1.1</i>
-              </p>
-              <p>
-                <i>App by Devon Yura Interactive Software House</i>
-              </p>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
-});
-Receipt.displayName = "Receipt";
-export default Receipt;
+          </tfoot>
+        </table>
+      </div>
+    );
+  },
+);
+ReceiptHistory.displayName = "ReceiptHistory";
+export default ReceiptHistory;

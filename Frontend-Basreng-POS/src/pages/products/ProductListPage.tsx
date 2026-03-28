@@ -31,6 +31,7 @@ import ProductForm from "./ProductForm";
 import "./ProductListPage.css";
 import { FILE_BASE_URL } from "../../hooks/restAPIRequest";
 import { AlertMessageProps } from "./PackageForm";
+import { formatWeight } from "../../hooks/formatting";
 
 const ProductListPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -177,7 +178,7 @@ const ProductListPage: React.FC = () => {
                             ) : (
                               product.variants.map((variant) => (
                                 <p key={variant.variant_id}>
-                                  {variant.weight_grams}gr — Rp{" "}
+                                  {formatWeight(variant.weight_grams)} — Rp{" "}
                                   {parseInt(variant.price).toLocaleString()}
                                 </p>
                               ))

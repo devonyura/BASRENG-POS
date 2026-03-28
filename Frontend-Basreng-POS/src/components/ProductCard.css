@@ -17,34 +17,65 @@
   margin-top: 10px;
   margin-bottom: 10px;
 }
-
 .variant-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 4px;
+
+  padding: 3px 0;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.variant-row:has(.qty-control) {
+  background: #eeeeee;
 }
 
 .variant-info {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  align-items: center;
 }
 
-.chip {
-  border: 2px solid #000;
-  border-radius: 12px;
-  padding: 6px 12px;
-  font-weight: 500;
+.variant-weight {
+  font-size: 15px;
+  font-weight: 600;
+  color: #494949;
+}
+
+.variant-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ion-color-primary);
+}
+
+.variant-action {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .qty-control {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+}
+
+.qty-control ion-button {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  height: 28px;
+}
+
+.qty {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
 }
 
 .subtotal {
-  margin-top: 10px;
-  font-weight: bold;
-  font-size: 18px;
+  margin-top: 8px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--ion-color-success);
+  filter: brightness(0.6);
 }

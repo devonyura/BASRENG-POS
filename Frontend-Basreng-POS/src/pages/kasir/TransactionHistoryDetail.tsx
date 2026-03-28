@@ -5,28 +5,17 @@ import {
   IonTitle,
   IonToolbar,
   IonModal,
-  IonBadge,
-  IonItemDivider,
-  IonList,
-  IonSelect,
-  IonSelectOption,
-  IonCheckbox,
   IonButtons,
-  IonAlert,
   IonSpinner,
 } from "@ionic/react";
-import { cart, cellular, flashOutline, receipt } from "ionicons/icons";
 
 import { useState, useEffect, useRef } from "react";
-import {
-  findTransactionHistory,
-  getTransactionHistory,
-} from "../../hooks/restAPIRequest";
+import { findTransactionHistory } from "../../hooks/restAPIRequest";
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
 import { OverlayEventDetail } from "@ionic/core/components";
-import Receipt, { BranchData } from "../../components/ReceiptHistory";
+import ReceiptHistory, { BranchData } from "../../components/ReceiptHistory";
 
 import React from "react";
 
@@ -38,7 +27,6 @@ interface TransactionHistoryDetailProps {
 
 export interface TransactionDetailItem {
   transaction_id: string;
-  product_id: string;
   product_name: string;
   quantity: string;
   price: string;
@@ -47,6 +35,7 @@ export interface TransactionDetailItem {
   name: string;
   descriptions: string;
   weight_grams?: number;
+  product_variant_id: string;
 }
 
 export interface Transaction {
@@ -169,7 +158,7 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
         </IonHeader>
         <IonContent className="ion-padding">
           {transactionData && (
-            <Receipt
+            <ReceiptHistory
               username={transactionData.transactions.username}
               ref={receiptRef}
               cash={Number(transactionData.transactions.cash_amount)}
@@ -185,11 +174,15 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
                 notes: transactionData.transactions.notes,
               }}
               cartItems={transactionData.transaction_details.map((item) => ({
-                id: item.product_id, // ✅ ganti dari product_id -> id
-                name: item.product_name, // ✅ ganti dari product_name -> name
+                variant_id: String(
+                  item.product_variant_id ?? item.product_variant_id,
+                ), // fallback kalau belum ada
+                name: item.product_name,
                 price: Number(item.price),
-                descriptions: item.descriptions,
                 quantity: Number(item.quantity),
+                descriptions: item.descriptions,
+                weight_grams: Number(item.weight_grams ?? 0),
+                subtotal: Number(item.subtotal),
               }))}
               receiptNoteNumber={transactionData.transactions.transaction_code}
               discount={0}

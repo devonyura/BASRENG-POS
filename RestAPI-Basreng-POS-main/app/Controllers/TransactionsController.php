@@ -257,10 +257,7 @@ class TransactionsController extends ResourceController
 
       $db = \Config\Database::connect();
       $builder = $db->table('transactions');
-      $builder->select('
-        *,
-        users.username AS username
-        ');
+      $builder->select('transactions.*, users.username');
       $builder->join('users', 'users.id = transactions.user_id', 'left');
       $builder->where('transaction_code', $transactions_code);
       $transaction = $builder->get()->getRowArray();
@@ -275,33 +272,27 @@ class TransactionsController extends ResourceController
       $builderDetail = $db->table('transaction_details');
       $builderDetail->select('
         transaction_details.transaction_id,
-        transaction_details.product_id,
-        products.name AS product_name,
+        transaction_details.product_variant_id,
         transaction_details.quantity,
         transaction_details.price,
-        transaction_details.subtotal
+        transaction_details.subtotal,
+        products.name AS product_name,
+        product_variants.weight_grams
         ');
-      // $builderDetail->join('products', 'products.id = transaction_details.product_id', 'left');
-      $builderDetail->select('
-      transaction_details.transaction_id,
-      transaction_details.quantity,
-      transaction_details.price,
-      transaction_details.subtotal,
-      products.name AS product_name,
-      product_variants.weight_grams
-    ');
 
       $builderDetail->join(
         'product_variants',
-        'product_variants.id = transaction_details.product_variant_id'
+        'product_variants.id = transaction_details.product_variant_id',
+        'left' // 🔥 WAJIB
       );
 
       $builderDetail->join(
         'products',
-        'products.id = product_variants.product_id'
+        'products.id = product_variants.product_id',
+        'left' // 🔥 WAJIB
       );
 
-      $builderDetail->where('transaction_id', $transaction['id']);
+      $builderDetail->where('transaction_details.transaction_id', $transaction['id']);
       $details = $builderDetail->get()->getResultArray();
 
       // Gabungkan Hasil

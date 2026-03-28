@@ -17,10 +17,7 @@ import {
 import { time, location } from "ionicons/icons";
 
 import { useState, useRef, useEffect } from "react";
-import {
-  getTransactionHistory,
-  findTransactionHistory,
-} from "../../hooks/restAPIRequest";
+import { getTransactionHistory } from "../../hooks/restAPIRequest";
 
 import { getUsers } from "../../hooks/restAPIUsers";
 import { getBranches } from "../../hooks/restAPIBranch";
@@ -171,17 +168,6 @@ const TransactionHistory: React.FC = () => {
         end_date: endDate,
       });
       setTransactionsHistory(result);
-      // setSelectedBranch();
-
-      // ================ Load data akun dan cabang
-      // const branches = await getBranches();
-      // const users = await getUsers();
-      // console.log("Branch:", branches);
-      // console.log("Users:", users);
-
-      // apa selanjutnya....
-      // setBranchList(branches);
-      // setUsersList(users);
     } catch (err) {
       console.error("Gagal memuat riwayat transaksi", err);
     }

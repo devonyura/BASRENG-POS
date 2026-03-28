@@ -18,7 +18,7 @@ const ResellerSelect: React.FC<Props> = ({ resellers, value, onChange }) => {
         placeholder="Pilih Reseller"
         onIonChange={(e) => onChange(e.detail.value)}
       >
-        <IonSelectOption value={null}>Batal pilih reseller</IonSelectOption>
+        <IonSelectOption value={null}>-- pilih reseller --</IonSelectOption>
         {resellers.map((r) => (
           <IonSelectOption key={r.id} value={r.id}>
             {r.name}

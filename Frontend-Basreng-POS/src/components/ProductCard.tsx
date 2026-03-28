@@ -2,7 +2,7 @@
 import React from "react";
 import { IonCard, IonCardContent, IonButton, IonText } from "@ionic/react";
 
-import { rupiahFormat, parseWeightGrams } from "../hooks/formatting";
+import { rupiahFormat, formatWeight } from "../hooks/formatting";
 import { DataProduct } from "../hooks/restAPIRequest";
 
 // Redux
@@ -43,6 +43,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       }),
     );
   };
+
+  // =========== Arraging desctiptions
+  const descriptionList = React.useMemo(() => {
+    if (!product.descriptions) return [];
+    return product.descriptions
+      .split(",")
+      .map((d) => d.trim())
+      .filter((d) => d.length > 0);
+  }, [product.descriptions]);
 
   const increase = (variant_id: number) => {
     const item = cartItems.find((i) => i.variant_id === variant_id);
@@ -93,6 +102,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {/* NAME */}
         <IonText className="product-title">{product.name}</IonText>
 
+        {descriptionList.length > 0 && (
+          <ul className="product-description">
+            {descriptionList.map((desc, i) => (
+              <li key={i}>{desc}</li>
+            ))}
+          </ul>
+        )}
+
         {/* VARIANTS */}
         {product?.variants?.map((v) => {
           const item = cartMap[v.variant_id];
@@ -101,42 +118,45 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           return (
             <div key={`${product.id}-${v.variant_id}`} className="variant-row">
               <div className="variant-info">
-                <span className="chip">{parseWeightGrams(v.weight_grams)}</span>
+                <span className="variant-weight">
+                  {formatWeight(v.weight_grams)}
+                </span>
 
-                <span className="chip">{rupiahFormat(v.price)}</span>
+                <span className="variant-price">{rupiahFormat(v.price)}</span>
               </div>
 
-              {qty === 0 ? (
-                <IonButton size="small" onClick={() => addVariant(v)}>
-                  +
-                </IonButton>
-              ) : (
-                <div className="qty-control">
-                  <IonButton
-                    size="small"
-                    onClick={() => decrease(v.variant_id)}
-                  >
-                    -
-                  </IonButton>
-
-                  <span>{qty}</span>
-
-                  <IonButton
-                    size="small"
-                    onClick={() => increase(v.variant_id)}
-                  >
+              <div className="variant-action">
+                {qty === 0 ? (
+                  <IonButton size="small" onClick={() => addVariant(v)}>
                     +
                   </IonButton>
+                ) : (
+                  <div className="qty-control">
+                    <IonButton
+                      color="danger"
+                      size="small"
+                      onClick={() => remove(v.variant_id)}
+                    >
+                      x
+                    </IonButton>
+                    <IonButton
+                      size="small"
+                      onClick={() => decrease(v.variant_id)}
+                    >
+                      -
+                    </IonButton>
 
-                  <IonButton
-                    color="danger"
-                    size="small"
-                    onClick={() => remove(v.variant_id)}
-                  >
-                    x
-                  </IonButton>
-                </div>
-              )}
+                    <span className="qty">{qty}</span>
+
+                    <IonButton
+                      size="small"
+                      onClick={() => increase(v.variant_id)}
+                    >
+                      +
+                    </IonButton>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

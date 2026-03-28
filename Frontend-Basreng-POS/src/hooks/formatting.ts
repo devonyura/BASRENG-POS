@@ -39,7 +39,7 @@ export function formatProductName(
   return `${name} (${formattedWeight})`;
 }
 
-function formatWeight(
+export function formatWeight(
   quantity?: string | number | null
 ): string | null {
   if (quantity === undefined || quantity === null || quantity === "") {
