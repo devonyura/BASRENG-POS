@@ -96,7 +96,7 @@ export const shortDate = (tanggalString: string): string => {
 
   const hari = date.getDate();
   const bulan = bulanPendek[date.getMonth()];
-  const tahun = date.getFullYear().toString().slice(-2); // ambil 2 digit terakhir
+  const tahun = date.getFullYear().toString(); // ambil 2 digit terakhir
 
   return `${hari} ${bulan} ${tahun}`;
 };

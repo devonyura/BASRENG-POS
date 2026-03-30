@@ -170,6 +170,8 @@ const Dashboard: React.FC = () => {
     logout();
   };
 
+  const isKasir = role === "kasir";
+
   return (
     <>
       <DashboardMenu onLogout={() => setLogoutShowAlert(true)} role={role} />
@@ -180,7 +182,8 @@ const Dashboard: React.FC = () => {
               <IonMenuButton></IonMenuButton>
             </IonButtons>
             <IonTitle>
-              📊 Ringkasan Hari ini {`Admin Menu ${role ?? ""}`}{" "}
+              📊 Ringkasan Hari ini{" "}
+              {isKasir ? "(Kasir)" : `Admin Menu ${role ?? ""}`}
             </IonTitle>
             <IonButtons slot="end">
               <IonButton onClick={fetchData}>
@@ -211,7 +214,11 @@ const Dashboard: React.FC = () => {
                         </IonCardHeader>
                         <IonCardContent>
                           <div className="details-card">
-                            <h5>Cabang: </h5>
+                            <h5>
+                              {isKasir
+                                ? "Transaksi Cabang Kamu"
+                                : "Semua Cabang"}
+                            </h5>
                             <h2>{rupiahFormat(summary?.hari_ini || 0)}</h2>
                             <h4>
                               Dari{" "}
@@ -226,7 +233,7 @@ const Dashboard: React.FC = () => {
                     </IonRow>
                   </IonGrid>
                 </IonCard>
-                {role == "admin" && (
+                {!isKasir && (
                   <>
                     <IonCard>
                       <IonCardHeader>
@@ -293,7 +300,7 @@ const Dashboard: React.FC = () => {
                 )}
               </IonCol>
             </IonRow>
-            {role == "admin" && (
+            {!isKasir && (
               <>
                 <IonRow>
                   <IonCol size="12" sizeMd="6">

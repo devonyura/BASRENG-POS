@@ -13,22 +13,16 @@ class ReportController extends ResourceController
   {
     $db = \Config\Database::connect();
 
-    // $day -= 1;
-
-    // Ambil parameter 'day' dari query string, default 7 jika tidak ada
-    // $days = $this->request->getGet('day');
-    // if (!is_numeric($days) || $days <= 0) {
-    //   $days = 7;
-    // }
-
-    // Query laporan penjualan berdasarkan jumlah hari
+    // FIX: pakai DATE() biar gak tergantung jam
     $query = $db->query("
-        SELECT DATE(date_time) AS date, SUM(total_price) AS total_sales
-        FROM transactions
-        WHERE date_time >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
-        GROUP BY DATE(date_time)
-        ORDER BY DATE(date_time)
-      ");
+      SELECT 
+        DATE(date_time) AS date, 
+        COALESCE(SUM(total_price),0) AS total_sales
+      FROM transactions
+      WHERE DATE(date_time) >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
+      GROUP BY DATE(date_time)
+      ORDER BY DATE(date_time)
+    ");
 
     return $this->respond($query->getResult());
   }
@@ -36,41 +30,48 @@ class ReportController extends ResourceController
   public function getProductSellsReport($day = 2)
   {
     $db = \Config\Database::connect();
-    // $day -= 1;
 
+    // FIX: join via product_variants (bukan td.product_id)
     $query = $db->query("
-		SELECT p.id AS product_id, p.name AS product_name, SUM(td.quantity) AS total_sold
-		FROM transactions t
-		JOIN transaction_details td ON t.id = td.transaction_id
-		JOIN products p ON td.product_id = p.id
-		WHERE t.date_time >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
-		GROUP BY p.id, p.name
-		ORDER BY total_sold DESC
-	");
+      SELECT 
+        p.id AS product_id, 
+        p.name AS product_name, 
+        SUM(td.quantity) AS total_sold
+      FROM transactions t
+      JOIN transaction_details td ON t.id = td.transaction_id
+      JOIN product_variants pv ON td.product_variant_id = pv.id
+      JOIN products p ON pv.product_id = p.id
+      WHERE DATE(t.date_time) >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
+      GROUP BY p.id, p.name
+      ORDER BY total_sold DESC
+    ");
 
     return $this->respond($query->getResult());
   }
 
-  public function getBranchReport($day = 0)
+  public function getBranchReport($day = 1)
   {
     $db = \Config\Database::connect();
-    // $day -= 1;
 
+    // FIX: support day dinamis + DATE()
     $query = $db->query("
-		SELECT b.branch_id, b.branch_name, COUNT(t.id) AS total_transactions, SUM(t.total_price) AS total_income
-		FROM transactions t
-		JOIN branch b ON t.branch_id = b.branch_id
-		WHERE t.date_time >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
-		GROUP BY b.branch_id, b.branch_name
-		ORDER BY total_income DESC
-	");
+      SELECT
+        b.branch_id,
+        b.branch_name,
+        COUNT(t.id) AS total_transactions,
+        COALESCE(SUM(t.total_price),0) AS total_income
+      FROM transactions t
+      JOIN branch b ON t.branch_id = b.branch_id
+      WHERE DATE(t.date_time) >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
+      GROUP BY b.branch_id, b.branch_name
+      ORDER BY total_income DESC
+    ");
 
     return $this->respond($query->getResult());
   }
 
   public function getDetailReport($date)
   {
-    // Validasi tanggal
     if (!$date || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
       return $this->failValidationErrors('Tanggal tidak valid. Gunakan format YYYY-MM-DD.');
     }
@@ -81,32 +82,25 @@ class ReportController extends ResourceController
      * Details Report
      */
     $detailsQuery = $db->query("
-	SELECT 
-		b.branch_id,
-		b.branch_name,
-		t.transaction_code,
-		DATE(t.date_time) AS date,
-		SUM(td.quantity) AS total_item,
-		t.payment_method,
-		t.is_online_order,
-		t.total_price
-	FROM transactions t
-	JOIN transaction_details td ON t.id = td.transaction_id
-	JOIN branch b ON t.branch_id = b.branch_id
-	WHERE DATE(t.date_time) = ?
-	GROUP BY 
-		b.branch_id, 
-		b.branch_name, 
-		t.id, 
-		t.transaction_code, 
-		date, 
-		t.payment_method, 
-		t.is_online_order, 
-		t.total_price
-	ORDER BY 
-		b.branch_id, 
-		t.transaction_code
-", [$date]);
+      SELECT 
+        b.branch_id,
+        b.branch_name,
+        t.transaction_code,
+        DATE(t.date_time) AS date,
+        SUM(td.quantity) AS total_item,
+        t.payment_method,
+        t.is_online_order,
+        t.total_price
+      FROM transactions t
+      JOIN transaction_details td ON t.id = td.transaction_id
+      JOIN branch b ON t.branch_id = b.branch_id
+      WHERE DATE(t.date_time) = ?
+      GROUP BY 
+        b.branch_id, 
+        b.branch_name, 
+        t.id
+      ORDER BY b.branch_id, t.transaction_code
+    ", [$date]);
 
     $results = $detailsQuery->getResult();
 
@@ -123,7 +117,6 @@ class ReportController extends ResourceController
       ];
     }
 
-
     /**
      * Product Sells Report
      */
@@ -132,10 +125,11 @@ class ReportController extends ResourceController
         p.id AS product_id, 
         p.name AS product_name, 
         SUM(td.quantity) AS total_sold,
-        SUM(td.subtotal) AS total_sales
+        COALESCE(SUM(td.subtotal),0) AS total_sales
       FROM transactions t
       JOIN transaction_details td ON t.id = td.transaction_id
-      JOIN products p ON td.product_id = p.id
+      JOIN product_variants pv ON td.product_variant_id = pv.id
+      JOIN products p ON pv.product_id = p.id
       WHERE DATE(t.date_time) = ?
       GROUP BY p.id, p.name
       ORDER BY total_sold DESC
@@ -149,7 +143,7 @@ class ReportController extends ResourceController
         b.branch_id, 
         b.branch_name, 
         COUNT(t.id) AS total_transactions, 
-        SUM(t.total_price) AS total_sales
+        COALESCE(SUM(t.total_price),0) AS total_sales
       FROM transactions t
       JOIN branch b ON t.branch_id = b.branch_id
       WHERE DATE(t.date_time) = ?
@@ -158,13 +152,11 @@ class ReportController extends ResourceController
     ", [$date]);
 
     return $this->respond([
-      'transactions_report'      => $detailsFormatted,
+      'transactions_report' => $detailsFormatted,
       'product_sells_report' => $productSellsQuery->getResult(),
-      'branch_report'        => $branchQuery->getResult()
+      'branch_report' => $branchQuery->getResult()
     ]);
   }
-
-
 
   public function getAllReports()
   {
@@ -172,22 +164,19 @@ class ReportController extends ResourceController
     $month = $this->request->getGet('month');
     $year = $this->request->getGet('year');
 
-    // Default day = 7 jika tidak ada day dan month
     if (!is_numeric($day) || $day <= 0) {
       $day = 7;
     }
 
-    // Default year ke tahun sekarang jika kosong atau invalid
     if (!is_numeric($year) || $year < 1970) {
       $year = date('Y');
     }
 
-    $monthCondition = '';
+    // FIX: pakai DATE()
     if (is_numeric($month) && $month >= 1 && $month <= 12) {
-      $monthNumber = (int)$month;
-      $monthCondition = "MONTH(t.date_time) = {$monthNumber} AND YEAR(t.date_time) = {$year}";
+      $monthCondition = "MONTH(t.date_time) = {$month} AND YEAR(t.date_time) = {$year}";
     } else {
-      $monthCondition = "t.date_time >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)";
+      $monthCondition = "DATE(t.date_time) >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)";
     }
 
     $db = \Config\Database::connect();
@@ -196,18 +185,19 @@ class ReportController extends ResourceController
      * Transactions Report
      */
     $transactionsQuery = $db->query("
-		SELECT 
-			b.branch_id,
-			b.branch_name,
-			DATE(t.date_time) AS date,
-			COUNT(t.id) AS total_transactions,
-			SUM(t.total_price) AS total_sales
-		FROM transactions t
-		JOIN branch b ON t.branch_id = b.branch_id
-		WHERE {$monthCondition}
-		GROUP BY b.branch_id, b.branch_name, DATE(t.date_time)
-		ORDER BY DATE(t.date_time)
-	");
+      SELECT 
+        b.branch_id,
+        b.branch_name,
+        DATE(t.date_time) AS date,
+        COUNT(t.id) AS total_transactions,
+        COALESCE(SUM(t.total_price),0) AS total_sales
+      FROM transactions t
+      JOIN branch b ON t.branch_id = b.branch_id
+      WHERE {$monthCondition}
+      GROUP BY b.branch_id, b.branch_name, DATE(t.date_time)
+      ORDER BY DATE(t.date_time)
+    ");
+
     $transactions = $transactionsQuery->getResult();
 
     $transactionsFormatted = [];
@@ -221,47 +211,47 @@ class ReportController extends ResourceController
     }
 
     /**
-     * Product Sells Report (limit 6)
+     * Product Sells
      */
     $productSellsQuery = $db->query("
-		SELECT 
-			p.id AS product_id, 
-			p.name AS product_name, 
-			SUM(td.quantity) AS total_sold,
-			SUM(td.subtotal) AS total_sales
-		FROM transactions t
-		JOIN transaction_details td ON t.id = td.transaction_id
-		JOIN products p ON td.product_id = p.id
-		WHERE {$monthCondition}
-		GROUP BY p.id, p.name
-		ORDER BY total_sold DESC
-	");
+      SELECT 
+        p.id AS product_id, 
+        p.name AS product_name, 
+        SUM(td.quantity) AS total_sold,
+        COALESCE(SUM(td.subtotal),0) AS total_sales
+      FROM transactions t
+      JOIN transaction_details td ON t.id = td.transaction_id
+      JOIN product_variants pv ON td.product_variant_id = pv.id
+      JOIN products p ON pv.product_id = p.id
+      WHERE {$monthCondition}
+      GROUP BY p.id, p.name
+      ORDER BY total_sold DESC
+    ");
 
     /**
      * Branch Report
      */
     $branchQuery = $db->query("
-		SELECT 
-			b.branch_id, 
-			b.branch_name, 
-			COUNT(t.id) AS total_transactions, 
-			SUM(t.total_price) AS total_sales
-		FROM transactions t
-		JOIN branch b ON t.branch_id = b.branch_id
-		WHERE {$monthCondition}
-		GROUP BY b.branch_id, b.branch_name
-		ORDER BY total_sales DESC
-	");
+      SELECT 
+        b.branch_id, 
+        b.branch_name, 
+        COUNT(t.id) AS total_transactions, 
+        COALESCE(SUM(t.total_price),0) AS total_sales
+      FROM transactions t
+      JOIN branch b ON t.branch_id = b.branch_id
+      WHERE {$monthCondition}
+      GROUP BY b.branch_id, b.branch_name
+      ORDER BY total_sales DESC
+    ");
 
     return $this->respond([
-      'transactions_report'  => $transactionsFormatted,
+      'transactions_report' => $transactionsFormatted,
       'product_sells_report' => $productSellsQuery->getResult(),
-      'branch_report'        => $branchQuery->getResult()
+      'branch_report' => $branchQuery->getResult()
     ]);
   }
 
-
-  private function generateSummary($user, $shouldFilter = false)
+  private function generateSummary($user, $filterByBranch = false)
   {
     $db = \Config\Database::connect();
 
@@ -269,16 +259,18 @@ class ReportController extends ResourceController
     $monday = date('Y-m-d', strtotime('monday this week'));
     $monthStart = date('Y-m-01');
 
-    $createBuilder = function () use ($db, $user, $shouldFilter) {
+    $createBuilder = function () use ($db, $user, $filterByBranch) {
       $builder = $db->table('transactions t');
 
-      if ($shouldFilter) {
-        $builder->where('t.user_id', $user['id']);
+      // FIX: hanya filter jika kasir
+      if ($filterByBranch) {
+        $builder->where('t.branch_id', $user['branch_id']);
       }
 
       return $builder;
     };
 
+    // FIX: pakai COALESCE manual
     $todaySales = $createBuilder()
       ->selectSum('t.total_price')
       ->where('DATE(t.date_time)', $today)
@@ -307,23 +299,19 @@ class ReportController extends ResourceController
     ];
   }
 
-  // GET /api/report/summary?username=john
   public function summary()
   {
     try {
-      // Ambil user dari JWT (bukan dari query param)
       $authUser = JwtHelper::getUserFromRequest($this->request);
-      // dd($authUser['username'+);
 
       if (!$authUser) {
         return $this->failUnauthorized('Unauthorized');
       }
 
-      // Filter hanya jika bukan admin atau owner
-      $shouldFilter = !in_array($authUser['role'], ['admin', 'owner']);
-      // dd($authUser['role']);
+      // FIX: hanya kasir yang difilter
+      $filterByBranch = ($authUser['role'] === 'kasir');
 
-      $data = $this->generateSummary($authUser, $shouldFilter);
+      $data = $this->generateSummary($authUser, $filterByBranch);
 
       return $this->respond([
         'status' => 'success',
@@ -338,20 +326,19 @@ class ReportController extends ResourceController
       return $this->failServerError($e->getMessage());
     }
   }
-  // GET /api/report/top-selling
+
   public function topSelling($day = 0)
   {
     $db = \Config\Database::connect();
 
-    // Hitung tanggal batas bawah berdasarkan $day
-    $dateThreshold = date('Y-m-d', strtotime("-$day days"));
-
+    // FIX: DATE() supaya konsisten
     $query = $db->table('transaction_details td')
       ->select('p.name, SUM(td.quantity) as total_sold')
-      ->join('products p', 'p.id = td.product_id')
+      ->join('product_variants pv', 'pv.id = td.product_variant_id')
+      ->join('products p', 'p.id = pv.product_id')
       ->join('transactions t', 't.id = td.transaction_id')
-      ->where('t.date_time >=', $dateThreshold) // Filter berdasarkan tanggal
-      ->groupBy('td.product_id')
+      ->where("DATE(t.date_time) >=", date('Y-m-d', strtotime("-$day days")))
+      ->groupBy('p.id')
       ->orderBy('total_sold', 'DESC')
       ->get();
 

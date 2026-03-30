@@ -29,6 +29,7 @@ import { rupiahFormat, shortDate } from "../../hooks/formatting";
 import dayjs from "dayjs";
 import TransactionHistoryDetail from "../kasir/TransactionHistoryDetail";
 import { useAuth } from "../../context/AuthContext";
+import { color } from "html2canvas/dist/types/css/types/color";
 
 export interface Branch {
   branch_id: string;
@@ -259,10 +260,21 @@ const TransactionHistory: React.FC = () => {
                   setSelectedTransactionCode(item.transaction_code)
                 }
               >
-                <IonLabel color="medium">
-                  <span>{shortDate(item.date)} </span>
-                  Jam: <span>{item.time}</span> |{" "}
-                  <span>{rupiahFormat(item.total_price)}</span>
+                <IonLabel
+                  color="medium"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span>
+                    <IonIcon icon={time} /> {item.time} - {shortDate(item.date)}
+                  </span>
+
+                  <span style={{ color: "darkgreen", fontWeight: "600" }}>
+                    {rupiahFormat(item.total_price)}
+                  </span>
                 </IonLabel>
               </IonItem>
             ))

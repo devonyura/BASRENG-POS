@@ -211,6 +211,8 @@ class TransactionsController extends ResourceController
         $builder->where('transactions.branch_id', $branchId);
       }
 
+      // ======== Melakukan penngurutan dari terbaru ke terlama (berdasarkan datetime)
+      $builder->orderBy('transactions.date_time', 'DESC');
       $query = $builder->get();
       $results = $query->getResultArray();
 
