@@ -160,6 +160,7 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
           {transactionData && (
             <ReceiptHistory
               username={transactionData.transactions.username}
+              branch_id={transactionData.transactions.branch_id}
               ref={receiptRef}
               cash={Number(transactionData.transactions.cash_amount)}
               change={Number(transactionData.transactions.change_amount)}

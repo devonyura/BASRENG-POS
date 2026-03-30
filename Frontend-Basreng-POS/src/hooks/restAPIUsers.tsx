@@ -1,9 +1,15 @@
-import { BASE_API_URL, isApiOnline, checkOKResponse, ApiResponse } from "./restAPIRequest";
+import {
+  BASE_API_URL,
+  isApiOnline,
+  checkOKResponse,
+  ApiResponse,
+} from "./restAPIRequest";
 import Cookies from "js-cookie";
 
 export interface User {
   id: string;
   username: string;
+  branch_id: string;
   role: string;
 }
 
@@ -34,7 +40,7 @@ export const getUsers = async (): Promise<User[] | any> => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${TOKEN}`,
+        Authorization: `Bearer ${TOKEN}`,
       },
     });
 
@@ -63,7 +69,7 @@ export const getUserById = async (id: string): Promise<User | any> => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${TOKEN}`,
+        Authorization: `Bearer ${TOKEN}`,
       },
     });
 
@@ -78,7 +84,9 @@ export const getUserById = async (id: string): Promise<User | any> => {
 };
 
 // Create user
-export const createUser = async (payload: CreateUserPayload): Promise<ApiResponse> => {
+export const createUser = async (
+  payload: CreateUserPayload,
+): Promise<ApiResponse> => {
   return new Promise(async (resolve, reject) => {
     try {
       const TOKEN = Cookies.get("token");
@@ -93,7 +101,7 @@ export const createUser = async (payload: CreateUserPayload): Promise<ApiRespons
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${TOKEN}`,
+          Authorization: `Bearer ${TOKEN}`,
         },
         body: JSON.stringify(payload),
       });
@@ -103,7 +111,8 @@ export const createUser = async (payload: CreateUserPayload): Promise<ApiRespons
 
       resolve({ success: true, data });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
+      const errorMessage =
+        error instanceof Error ? error.message : "Terjadi kesalahan";
       console.error("Gagal menambah user:", error);
       reject("Gagal menambah user: " + errorMessage);
     }
@@ -111,7 +120,9 @@ export const createUser = async (payload: CreateUserPayload): Promise<ApiRespons
 };
 
 // Reset password
-export const resetUserPassword = async (payload: ResetPasswordPayload): Promise<ApiResponse> => {
+export const resetUserPassword = async (
+  payload: ResetPasswordPayload,
+): Promise<ApiResponse> => {
   return new Promise(async (resolve, reject) => {
     try {
       const TOKEN = Cookies.get("token");
@@ -126,7 +137,7 @@ export const resetUserPassword = async (payload: ResetPasswordPayload): Promise<
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${TOKEN}`,
+          Authorization: `Bearer ${TOKEN}`,
         },
         body: JSON.stringify(payload),
       });
@@ -136,7 +147,8 @@ export const resetUserPassword = async (payload: ResetPasswordPayload): Promise<
 
       resolve({ success: true, data });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
+      const errorMessage =
+        error instanceof Error ? error.message : "Terjadi kesalahan";
       console.error("Gagal reset password:", error);
       reject("Gagal reset password: " + errorMessage);
     }
@@ -159,7 +171,7 @@ export const deleteUser = async (id: string): Promise<ApiResponse> => {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${TOKEN}`,
+          Authorization: `Bearer ${TOKEN}`,
         },
       });
 
@@ -168,7 +180,8 @@ export const deleteUser = async (id: string): Promise<ApiResponse> => {
 
       resolve({ success: true, data });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
+      const errorMessage =
+        error instanceof Error ? error.message : "Terjadi kesalahan";
       console.error("Gagal hapus user:", error);
       reject("Gagal hapus user: " + errorMessage);
     }

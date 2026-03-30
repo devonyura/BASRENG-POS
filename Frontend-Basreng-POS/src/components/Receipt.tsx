@@ -21,6 +21,7 @@ import { useAuth } from "../hooks/useAuthCookie";
 import "./Receipt.css";
 import { textAlign } from "html2canvas/dist/types/css/property-descriptors/text-align";
 import { CartItem } from "../../src/redux/cartSlice";
+import { date } from "zod";
 
 interface ReceiptProps {
   // branch: string[];
@@ -44,6 +45,7 @@ interface ReceiptProps {
   shopeeCode: string | null | undefined;
   paymentMethod: string | null | undefined;
   totalBeforeDiscount: number;
+  date?: string;
   // branchData: BranchData | null;
 }
 
@@ -68,6 +70,7 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
     shopeeCode,
     paymentMethod,
     totalBeforeDiscount,
+    date,
   } = props;
 
   const { username, branchData } = useAuth();
@@ -206,7 +209,9 @@ const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>((props, ref) => {
             </tr>
           )}
           <tr>
-            <td colSpan={3}>Tgl. 28-10-2025</td>
+            <td colSpan={3}>
+              Tgl. {date ?? new Date().toLocaleDateString("id-ID")}
+            </td>
             <td>Cabang: {branchData?.branch_name}</td>
           </tr>
           <tr>

@@ -23,6 +23,7 @@ import { textAlign } from "html2canvas/dist/types/css/property-descriptors/text-
 
 interface ReceiptHistoryProps {
   username: string;
+  branch_id: string;
   cash: number;
   change: number;
   total: number;
@@ -72,10 +73,22 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
       shopeeCode,
     } = props;
 
-    const { branchData } = useAuth();
-    console.log("Detail Transaction:", props);
+    const [branchData, setBranchData] = useState<BranchData | null>(null);
 
-    // const [branchDataState] = useState<BranchData | null>(branchData);
+    useEffect(() => {
+      const fetchBranch = async () => {
+        if (!props.branch_id) return;
+
+        try {
+          const res = await getBranch(Number(props.branch_id));
+          setBranchData(res.data);
+        } catch (err) {
+          console.error("Gagal ambil Branch:", err);
+        }
+      };
+
+      fetchBranch();
+    }, [props.branch_id]);
 
     return (
       <div className="receipt-container" ref={ref}>
