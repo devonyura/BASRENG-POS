@@ -27,26 +27,73 @@ class ReportController extends ResourceController
     return $this->respond($query->getResult());
   }
 
-  public function getProductSellsReport($day = 2)
+  public function getProductSellsReport($day = null)
   {
     $db = \Config\Database::connect();
 
-    // FIX: join via product_variants (bukan td.product_id)
-    $query = $db->query("
-      SELECT 
-        p.id AS product_id, 
-        p.name AS product_name, 
-        SUM(td.quantity) AS total_sold
-      FROM transactions t
-      JOIN transaction_details td ON t.id = td.transaction_id
-      JOIN product_variants pv ON td.product_variant_id = pv.id
-      JOIN products p ON pv.product_id = p.id
-      WHERE DATE(t.date_time) >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
-      GROUP BY p.id, p.name
-      ORDER BY total_sold DESC
-    ");
+    // ==============================
+    // ✅ FIX 1: Handle default day
+    // ==============================
+    // Jika tidak ada parameter → hanya hari ini
+    if (!is_numeric($day)) {
+      $day = 0;
+    }
 
-    return $this->respond($query->getResult());
+    // ==============================
+    // ✅ FIX 2: Handle limit (opsional)
+    // ==============================
+    // contoh: /api/report/product-sells/7?limit=10
+    $limit = $this->request->getGet('limit');
+    $limitSql = "";
+
+    if (is_numeric($limit) && $limit > 0) {
+      $limitSql = "LIMIT {$limit}";
+    }
+
+    // ==============================
+    // ✅ FIX 3: Query per VARIANT
+    // ==============================
+    //     -- ==============================
+    // -- ✅ FIX 4: Filter tanggal fleksibel
+    // -- ==============================
+    // -- ==============================
+    // -- ✅ FIX 5: GROUP BY VARIANT (bukan product)
+    // -- ==============================
+
+    $query = $db->query("
+    SELECT 
+      pv.id AS variant_id,
+      p.name AS product_name,
+
+      -- tampilkan label variant (contoh: Basreng 250gr)
+      CASE 
+        WHEN pv.weight_grams > 0 
+        THEN CONCAT(p.name, ' ', pv.weight_grams, 'gr')
+        ELSE p.name
+      END AS variant_name,
+
+      SUM(td.quantity) AS total_sold,
+      COALESCE(SUM(td.subtotal),0) AS total_sales
+
+    FROM transactions t
+    JOIN transaction_details td ON t.id = td.transaction_id
+    JOIN product_variants pv ON td.product_variant_id = pv.id
+    JOIN products p ON pv.product_id = p.id
+
+
+    WHERE DATE(t.date_time) >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
+
+    GROUP BY pv.id, p.name, pv.weight_grams
+
+    ORDER BY total_sold DESC
+
+    {$limitSql}
+  ");
+
+    return $this->respond([
+      'status' => 'success',
+      'data'   => $query->getResult()
+    ]);
   }
 
   public function getBranchReport($day = 1)
@@ -327,23 +374,62 @@ class ReportController extends ResourceController
     }
   }
 
-  public function topSelling($day = 0)
+  public function topSelling($day = null)
   {
     $db = \Config\Database::connect();
 
-    // FIX: DATE() supaya konsisten
-    $query = $db->table('transaction_details td')
-      ->select('p.name, SUM(td.quantity) as total_sold')
+    // =========================
+    // FIX 1: default hari = hari ini
+    // =========================
+    if (!is_numeric($day) || $day < 0) {
+      $day = 0;
+    }
+
+    $dateFrom = date('Y-m-d', strtotime("-$day days"));
+
+    // =========================
+    // FIX 2: param limit (optional)
+    // contoh: ?limit=5
+    // =========================
+    $limit = $this->request->getGet('limit');
+    if (!is_numeric($limit) || $limit <= 0) {
+      $limit = null; // null = semua data
+    }
+
+    // =========================
+    // FIX 3: query PER VARIANT (bukan product)
+    // =========================
+    $builder = $db->table('transaction_details td')
+      ->select("
+      pv.id AS variant_id,
+      p.name AS product_name,
+      pv.weight_grams,
+      pv.price,
+      SUM(td.quantity) as total_sold,
+      COALESCE(SUM(td.subtotal),0) as total_sales
+    ")
       ->join('product_variants pv', 'pv.id = td.product_variant_id')
       ->join('products p', 'p.id = pv.product_id')
       ->join('transactions t', 't.id = td.transaction_id')
-      ->where("DATE(t.date_time) >=", date('Y-m-d', strtotime("-$day days")))
-      ->groupBy('p.id')
-      ->orderBy('total_sold', 'DESC')
-      ->get();
+      ->where("DATE(t.date_time) >=", $dateFrom)
+      ->groupBy('pv.id, p.name, pv.weight_grams, pv.price')
+      ->orderBy('total_sold', 'DESC');
+
+    // =========================
+    // FIX 4: apply limit jika ada
+    // =========================
+    if ($limit !== null) {
+      $builder->limit($limit);
+    }
+
+    $query = $builder->get();
 
     return $this->respond([
       'status' => 'success',
+      'meta' => [
+        'day_range' => $day,
+        'limit' => $limit ?? 'all'
+      ],
       'data' => $query->getResult()
     ]);
   }

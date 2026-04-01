@@ -1,11 +1,22 @@
-export function rupiahFormat(value: string | number, withRp: boolean = true) {
-  // Menghapus titik desimal yang tidak diperlukan
-  let cleanValue = value.toString().replace(/\.00$/, "").replace(/\./g, "");
+export function rupiahFormat(value: string | number | null | undefined, withRp: boolean = true) {
+  if (value === null || value === undefined || value === "") {
+    return withRp ? "Rp.0" : "0";
+  }
 
-  // Konversi ke angka
+  let cleanValue = value
+    .toString()
+    .replace(/\.00$/, "")
+    .replace(/\./g, "");
+
   let number = parseInt(cleanValue, 10);
 
-  return (withRp) ? 'Rp.' + number.toLocaleString("id-ID") : '' + number.toLocaleString("id-ID");
+  if (isNaN(number)) {
+    number = 0;
+  }
+
+  return withRp
+    ? "Rp." + number.toLocaleString("id-ID")
+    : number.toLocaleString("id-ID");
 }
 
 export function parseWeightGrams(quantity?: string | number | null) {
@@ -100,3 +111,23 @@ export const shortDate = (tanggalString: string): string => {
 
   return `${hari} ${bulan} ${tahun}`;
 };
+
+export function formatProductWithWeight(
+  name: string,
+  weight?: string | number | null
+): string {
+  if (!name) return "-";
+
+  const grams = Number(weight);
+
+  if (!weight || isNaN(grams) || grams <= 0) {
+    return name;
+  }
+
+  if (grams >= 1000) {
+    const kg = grams / 1000;
+    return `${name} (${Number.isInteger(kg) ? kg : kg.toFixed(2)}kg)`;
+  }
+
+  return `${name} (${grams}gr)`; // ✅ INI YANG KEMARIN HILANG
+}

@@ -5,12 +5,8 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
-  IonSegment,
   IonIcon,
   IonLabel,
-  IonSegmentButton,
-  IonSegmentContent,
-  IonSegmentView,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -18,13 +14,8 @@ import {
   IonCol,
   IonGrid,
   IonRow,
-  IonSearchbar,
   IonList,
   IonItem,
-  IonModal,
-  IonItemSliding,
-  IonItemOption,
-  IonItemOptions,
   IonButtons,
   IonMenuButton,
   IonAlert,
@@ -35,8 +26,6 @@ import {
 } from "@ionic/react";
 import { statsChart, cashOutline, refresh } from "ionicons/icons";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -50,21 +39,22 @@ import {
   Legend,
 } from "recharts";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { loginRequest } from "../../hooks/restAPIRequest";
 import { useAuth } from "../../hooks/useAuthCookie";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./Dashboard.css";
 import {
+  TopSelling,
   getTransactionSummary,
   getIncomeByBranch,
   getTopSellingProduct,
   getTransactionsReport,
   BranchIncome,
 } from "../../hooks/restAPIDashboard";
-import { rupiahFormat } from "../../hooks/formatting";
+import { formatProductWithWeight, rupiahFormat } from "../../hooks/formatting";
 import DashboardMenu from "../../components/DashboardMenu";
+import { generateDailyReport } from "../../utils/generateDailyReport";
 
 interface LocationState {
   isTokenExpired?: boolean;
@@ -73,8 +63,16 @@ interface LocationState {
 
 const Dashboard: React.FC = () => {
   const [summary, setSummary] = useState<any>(null);
+
   const [incomeByBranch, setIncomeByBranch] = useState<BranchIncome[]>([]);
-  const [topSellingProduct, setTopSellingProduct] = useState<any[]>([]);
+  const [topSellingProduct, setTopSellingProduct] = useState<
+    {
+      name: string;
+      total_sold: number;
+      total_sales: number;
+    }[]
+  >([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,10 +102,11 @@ const Dashboard: React.FC = () => {
       }
 
       try {
-        const topSellingData = await getTopSellingProduct();
-        const pieData = topSellingData.map((item: any) => ({
-          ...item,
-          total_sold: parseInt(item.total_sold, 10),
+        const res = await getTopSellingProduct(5);
+        const pieData = res.map((item: TopSelling) => ({
+          name: formatProductWithWeight(item.product_name, item.weight_grams),
+          total_sold: Number(item.total_sold || 0),
+          total_sales: Number(item.total_sales || 0),
         }));
         setTopSellingProduct(pieData);
       } catch (e) {
@@ -121,7 +120,7 @@ const Dashboard: React.FC = () => {
         // Asumsikan response adalah array langsung, kalau tidak kita perbaiki
         const formatted = response.map((item: any) => ({
           date: item.date,
-          total_sales: parseFloat(item.total_sales),
+          total_sales: parseFloat(item.total_sales || 0),
         }));
         setChartData(formatted);
         console.log(chartData);
@@ -188,6 +187,27 @@ const Dashboard: React.FC = () => {
             <IonButtons slot="end">
               <IonButton onClick={fetchData}>
                 <IonIcon icon={refresh} />
+              </IonButton>
+              <IonButton
+                onClick={async () => {
+                  const allProducts = await getTopSellingProduct("all");
+
+                  generateDailyReport({
+                    summary: summary,
+                    branches: incomeByBranch,
+                    products: allProducts.map((item: any) => ({
+                      product_name: formatProductWithWeight(
+                        item.product_name || "-",
+                        item.weight_grams,
+                      ),
+                      total_sold: Number(item.total_sold || 0),
+                      total_sales: Number(item.total_sales || 0),
+                    })),
+                    date: new Date().toISOString().slice(0, 10),
+                  });
+                }}
+              >
+                Export PDF
               </IonButton>
             </IonButtons>
           </IonToolbar>

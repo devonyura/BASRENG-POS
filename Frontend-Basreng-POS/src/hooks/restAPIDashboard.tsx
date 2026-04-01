@@ -25,8 +25,12 @@ export interface BranchIncome {
 // Tipe data untuk Pendapatan per Cabang
 // =============================
 export interface TopSelling {
-  name: string;
+  variant_id: string;
+  product_name: string;
+  weight_grams: string;
+  price: string;
   total_sold: string;
+  total_sales: string;
 }
 
 export interface ProductCategorySummary {
@@ -67,13 +71,17 @@ export const getTransactionSummary = async (): Promise<
 // =============================
 // Fetch Ringkasan Penjualan
 // =============================
-export const getTopSellingProduct = async (): Promise<TopSelling | any> => {
+export const getTopSellingProduct = async (
+  limit: number | "all" = "all",
+): Promise<TopSelling[]> => {
   try {
     const TOKEN = Cookies.get("token");
     const apiOnline = await isApiOnline();
     if (!apiOnline) throw new Error("Tidak dapat terhubung ke server.");
 
-    const url = `${BASE_API_URL}/api/report/top-selling`;
+    const query = limit === "all" ? "" : `?limit=${limit}`;
+    const url = `${BASE_API_URL}/api/report/top-selling${query}`;
+
     const response = await fetch(url, {
       method: "GET",
       credentials: "include",
@@ -84,11 +92,12 @@ export const getTopSellingProduct = async (): Promise<TopSelling | any> => {
     });
 
     checkOKResponse(response);
-    const data = await response.json();
-    return data.data;
+    const json = await response.json();
+
+    return json.data;
   } catch (error) {
     console.error("Error fetching product top selling:", error);
-    return error;
+    return [];
   }
 };
 
