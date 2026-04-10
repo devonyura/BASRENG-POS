@@ -6,7 +6,8 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Home::index');
-
+$routes->get('report/sendDailyReport', 'ReportController::sendDailyReport');
+$routes->get('report/sendDailyReport/(:num)', 'ReportController::sendDailyReport/$1');
 $routes->options('api/ping', 'PingController::index');
 $routes->head('api/ping', 'PingController::index');
 

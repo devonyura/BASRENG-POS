@@ -61,8 +61,19 @@ interface LocationState {
   dontRefresh?: boolean;
 }
 
+export interface Summary {
+  total_sales?: number;
+  total_transactions?: number;
+  payment_summary?: {
+    cash?: number;
+    transfer_bank: number;
+    qris: number;
+    shopee: number;
+  };
+}
+
 const Dashboard: React.FC = () => {
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<Summary>();
 
   const [incomeByBranch, setIncomeByBranch] = useState<BranchIncome[]>([]);
   const [topSellingProduct, setTopSellingProduct] = useState<
@@ -88,8 +99,8 @@ const Dashboard: React.FC = () => {
     try {
       try {
         const summaryData = await getTransactionSummary();
+        console.log("summaryData:", summaryData);
         setSummary(summaryData);
-        console.log(summaryData);
       } catch (e) {
         console.warn("Gagal ambil ringkasan transaksi:", e);
       }
@@ -239,11 +250,11 @@ const Dashboard: React.FC = () => {
                                 ? "Transaksi Cabang Kamu"
                                 : "Semua Cabang"}
                             </h5>
-                            <h2>{rupiahFormat(summary?.hari_ini || 0)}</h2>
+                            <h2>{rupiahFormat(summary?.total_sales || 0)}</h2>
                             <h4>
                               Dari{" "}
                               <strong>
-                                {summary?.jumlah_transaksi_hari_ini || 0}
+                                {summary?.total_transactions || 0}
                               </strong>{" "}
                               Transaksi
                             </h4>

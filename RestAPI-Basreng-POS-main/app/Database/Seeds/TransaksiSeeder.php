@@ -30,6 +30,7 @@ class TransaksiSeeder extends Seeder
     $userByBranch = [
       1 => [1, 5], // branch 1
       2 => [4, 3], // branch 2
+      3 => [6], // branch 2
     ];
 
     $branches = [1, 2];

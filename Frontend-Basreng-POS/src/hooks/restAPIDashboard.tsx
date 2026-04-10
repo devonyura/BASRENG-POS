@@ -19,6 +19,10 @@ export interface BranchIncome {
   branch_name: string;
   total_transactions: string;
   total_income: string;
+  total_income_cash: string;
+  total_income_transfer_bank: string;
+  total_income_qris: string;
+  total_income_shopee: string;
 }
 
 // =============================

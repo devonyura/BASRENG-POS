@@ -96,20 +96,31 @@ class ReportController extends ResourceController
     ]);
   }
 
-  public function getBranchReport($day = 1)
+  public function getBranchReport($day = 0)
   {
     $db = \Config\Database::connect();
 
-    // FIX: support day dinamis + DATE()
+    $startDate = date('Y-m-d', strtotime("-$day days"));
+    $endDate = date('Y-m-d');
+
+    // =========================
+    // FIX: tambah breakdown payment per cabang
+    // =========================
     $query = $db->query("
       SELECT
         b.branch_id,
         b.branch_name,
         COUNT(t.id) AS total_transactions,
-        COALESCE(SUM(t.total_price),0) AS total_income
+        COALESCE(SUM(t.total_price),0) AS total_income,
+
+        COALESCE(SUM(CASE WHEN t.payment_method = 'cash' THEN t.total_price ELSE 0 END),0) AS total_income_cash,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'transfer_bank' THEN t.total_price ELSE 0 END),0) AS total_income_transfer_bank,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'qris' THEN t.total_price ELSE 0 END),0) AS total_income_qris,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'shopee' THEN t.total_price ELSE 0 END),0) AS total_income_shopee
+
       FROM transactions t
       JOIN branch b ON t.branch_id = b.branch_id
-      WHERE DATE(t.date_time) >= DATE_SUB(CURDATE(), INTERVAL {$day} DAY)
+      WHERE DATE(t.date_time) BETWEEN '$startDate' AND '$endDate'
       GROUP BY b.branch_id, b.branch_name
       ORDER BY total_income DESC
     ");
@@ -298,51 +309,69 @@ class ReportController extends ResourceController
     ]);
   }
 
-  private function generateSummary($user, $filterByBranch = false)
+  private function generateSummary($user, $filterByBranch = false, $day = 0)
   {
     $db = \Config\Database::connect();
 
-    $today = date('Y-m-d');
-    $monday = date('Y-m-d', strtotime('monday this week'));
-    $monthStart = date('Y-m-01');
+    $startDate = date('Y-m-d', strtotime("-$day days"));
+    $endDate   = date('Y-m-d');
 
-    $createBuilder = function () use ($db, $user, $filterByBranch) {
+    $createBuilder = function () use ($db, $user, $filterByBranch, $startDate, $endDate) {
       $builder = $db->table('transactions t');
 
-      // FIX: hanya filter jika kasir
+      // FIX: filter hanya untuk kasir
       if ($filterByBranch) {
         $builder->where('t.branch_id', $user['branch_id']);
       }
 
+      // FIX: range tanggal konsisten
+      $builder->where("DATE(t.date_time) >=", $startDate);
+      $builder->where("DATE(t.date_time) <=", $endDate);
+
       return $builder;
     };
 
-    // FIX: pakai COALESCE manual
-    $todaySales = $createBuilder()
+    // =========================
+    // TOTAL SALES
+    // =========================
+    $totalSales = $createBuilder()
       ->selectSum('t.total_price')
-      ->where('DATE(t.date_time)', $today)
       ->get()->getRow()->total_price ?? 0;
 
-    $todayCount = $createBuilder()
+    // =========================
+    // TOTAL TRANSAKSI
+    // =========================
+    $totalTransactions = $createBuilder()
       ->selectCount('t.id')
-      ->where('DATE(t.date_time)', $today)
       ->get()->getRow()->id ?? 0;
 
-    $weekSales = $createBuilder()
-      ->selectSum('t.total_price')
-      ->where("DATE(t.date_time) BETWEEN '$monday' AND '$today'")
-      ->get()->getRow()->total_price ?? 0;
+    // =========================
+    // 🔥 NEW: PAYMENT SUMMARY
+    // =========================
+    $paymentQuery = $createBuilder()
+      ->select('t.payment_method, SUM(t.total_price) as total')
+      ->groupBy('t.payment_method')
+      ->get()
+      ->getResultArray();
 
-    $monthSales = $createBuilder()
-      ->selectSum('t.total_price')
-      ->where("DATE(t.date_time) BETWEEN '$monthStart' AND '$today'")
-      ->get()->getRow()->total_price ?? 0;
+    // Format agar semua method selalu ada (meskipun 0)
+    $paymentSummary = [
+      'cash' => 0,
+      'transfer_bank' => 0,
+      'qris' => 0,
+      'shopee' => 0,
+    ];
+
+    foreach ($paymentQuery as $row) {
+      $paymentSummary[$row['payment_method']] = (int)$row['total'];
+    }
 
     return [
-      'hari_ini' => (int)$todaySales,
-      'minggu_ini' => (int)$weekSales,
-      'bulan_ini' => (int)$monthSales,
-      'jumlah_transaksi_hari_ini' => (int)$todayCount,
+      'total_sales' => (int)$totalSales,
+      'total_transactions' => (int)$totalTransactions,
+
+      // 🔥 tambahan baru
+      'payment_summary' => $paymentSummary
     ];
   }
 
@@ -355,10 +384,19 @@ class ReportController extends ResourceController
         return $this->failUnauthorized('Unauthorized');
       }
 
+      // =========================
+      // FIX: ambil param day
+      // =========================
+      $day = $this->request->getGet('day');
+      if (!is_numeric($day) || $day < 0) {
+        $day = 0; // default hari ini
+      }
+
       // FIX: hanya kasir yang difilter
       $filterByBranch = ($authUser['role'] === 'kasir');
 
-      $data = $this->generateSummary($authUser, $filterByBranch);
+      // FIX: kirim $day ke generator
+      $data = $this->generateSummary($authUser, $filterByBranch, $day);
 
       return $this->respond([
         'status' => 'success',
@@ -432,5 +470,477 @@ class ReportController extends ResourceController
       ],
       'data' => $query->getResult()
     ]);
+  }
+
+  public function sendDailyReport()
+  {
+
+    $db = \Config\Database::connect();
+
+    // =========================
+    // 1. AMBIL DATA (REUSE LOGIC)
+    // =========================
+    $day = 0;
+
+    // Summary
+    $summary = $this->generateSummary([
+      'branch_id' => null
+    ], false, $day);
+
+    // Branch
+    $branchQuery = $db->query("
+      SELECT
+        b.branch_id,
+        b.branch_name,
+        COUNT(t.id) AS total_transactions,
+        COALESCE(SUM(t.total_price),0) AS total_income,
+
+        COALESCE(SUM(CASE WHEN t.payment_method = 'cash' THEN t.total_price ELSE 0 END),0) AS total_income_cash,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'transfer_bank' THEN t.total_price ELSE 0 END),0) AS total_income_transfer_bank,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'qris' THEN t.total_price ELSE 0 END),0) AS total_income_qris,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'shopee' THEN t.total_price ELSE 0 END),0) AS total_income_shopee
+        
+      FROM transactions t
+      JOIN branch b ON t.branch_id = b.branch_id
+      WHERE DATE(t.date_time) = CURDATE()
+      GROUP BY b.branch_id, b.branch_name
+      ORDER BY total_income DESC
+    ");
+
+    $branches = $branchQuery->getResult();
+
+    // Top Selling (limit 5)
+    $topSelling = $db->query("
+      SELECT 
+        b.branch_id,
+        b.branch_name,
+        p.name AS product_name,
+        pv.weight_grams,
+        SUM(td.quantity) as total_sold,
+        SUM(td.subtotal) as total_sales
+      FROM transaction_details td
+      JOIN product_variants pv ON pv.id = td.product_variant_id
+      JOIN products p ON p.id = pv.product_id
+      JOIN transactions t ON t.id = td.transaction_id
+      JOIN branch b ON b.branch_id = t.branch_id
+      WHERE DATE(t.date_time) = CURDATE()
+      GROUP BY b.branch_id, pv.id
+      ORDER BY b.branch_id, total_sold DESC
+    ")->getResult();
+
+    $groupedProducts = [];
+
+    foreach ($topSelling as $row) {
+      $branchId = $row->branch_id;
+
+      if (!isset($groupedProducts[$branchId])) {
+        $groupedProducts[$branchId] = [
+          'branch_name' => $row->branch_name,
+          'products' => []
+        ];
+      }
+
+      $groupedProducts[$branchId]['products'][] = [
+        'product_name' => $this->formatProductName($row->product_name, $row->weight_grams),
+        'total_sold' => $row->total_sold,
+        'total_sales' => $row->total_sales,
+      ];
+    }
+
+    $hourlySales = $db->query("
+      SELECT 
+        b.branch_name,
+        HOUR(t.date_time) as hour,
+        SUM(t.total_price) as total_sales
+      FROM transactions t
+      JOIN branch b ON b.branch_id = t.branch_id
+      WHERE DATE(t.date_time) = CURDATE()
+      GROUP BY b.branch_id, HOUR(t.date_time)
+      ORDER BY hour ASC
+    ")->getResult();
+
+    $labels = range(9, 22); // jam kerja
+    $datasets = [];
+
+    // =========================
+    // 1. BUILD DATASET
+    // =========================
+    foreach ($hourlySales as $row) {
+      $branch = $row->branch_name;
+      $hour = (int)$row->hour;
+      $sales = (int)$row->total_sales;
+
+      if (!isset($datasets[$branch])) {
+        $datasets[$branch] = array_fill(0, 24, 0);
+      }
+
+      $datasets[$branch][$hour] = $sales;
+    }
+
+    // =========================
+    // 2. POTONG JAM 9 - 22
+    // =========================
+    foreach ($datasets as $branch => $data) {
+      $datasets[$branch] = array_slice($data, 9, 14); // 9–22
+    }
+
+    // =========================
+    // 3. KONVERSI KE RIBUAN (BIAR CLEAN)
+    // =========================
+    foreach ($datasets as $branch => $data) {
+      $datasets[$branch] = array_map(function ($v) {
+        return round($v / 1000); // jadi "k"
+      }, $data);
+    }
+
+    // =========================
+    // 4. BUILD CHART CONFIG
+    // =========================
+    // $chartConfig = [
+    //   "type" => "line",
+    //   "data" => [
+    //     "labels" => array_map(fn($h) => sprintf("%02d.00", $h), $labels),
+    //     "datasets" => []
+    //   ],
+    //   "options" => [
+    //     "plugins" => [
+    //       "title" => [
+    //         "display" => true,
+    //         "text" => "Grafik Penjualan Harian per Jam (dalam ribuan Rupiah)"
+    //       ],
+    //       "legend" => [
+    //         "position" => "bottom"
+    //       ]
+    //     ],
+    //     "elements" => [
+    //       "line" => [
+    //         "tension" => 0.3 // smooth line
+    //       ]
+    //     ]
+    //   ]
+    // ];
+
+    // =========================
+    // 5. WARNA + DATASET
+    // =========================
+    // $colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#8e44ad'];
+
+    // $i = 0;
+    // foreach ($datasets as $branch => $data) {
+    //   $chartConfig["data"]["datasets"][] = [
+    //     "label" => $branch,
+    //     "data" => array_values($data),
+    //     "fill" => false,
+    //     "borderColor" => $colors[$i % count($colors)],
+    //     "pointRadius" => 3
+    //   ];
+    //   $i++;
+    // }
+
+    // =========================
+    // 6. GENERATE URL
+    // =========================
+    // $chartUrl = "https://quickchart.io/chart?width=500&height=300&c=" . urlencode(json_encode($chartConfig));
+
+    // =========================
+    // 2. GENERATE HTML (TEMPLATE)
+    // =========================
+    $html = view('pdf/daily_report', [
+      'summary' => $summary,
+      'branches' => $branches,
+      'products' => $groupedProducts,
+      'date' => date('Y-m-d'),
+      // 'chartUrl' => $chartUrl
+    ]);
+
+
+    # code...
+    // =========================
+    // 3. GENERATE PDF
+    // =========================
+    $dompdf = new \Dompdf\Dompdf();
+    $dompdf->loadHtml($html);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+
+    // =========================
+    // 4. SIMPAN FILE
+    // =========================
+    $fileName = 'laporan-' . date('Y-m-d') . '.pdf';
+    $filepath = FCPATH . "reports/$fileName";
+
+    // =========================
+    // HAPUS FILE LAMA JIKA ADA
+    // =========================
+    if (file_exists($filepath) && !unlink($filepath)) {
+      throw new \Exception("Gagal menghapus file lama");
+    }
+    if (!is_dir(FCPATH . "reports")) {
+      mkdir(FCPATH . "reports", 0777, true);
+    }
+
+    // =========================
+    // SIMPAN FILE BARU
+    // =========================
+    file_put_contents($filepath, $dompdf->output());
+
+
+    // ================= URL =================
+    $url = base_url("reports/$fileName");
+
+
+    // =========================
+    // 5. KIRIM WA (FONNTE)
+    // =========================
+    $this->sendWhatsApp($url);
+
+    return $this->respond([
+      'status' => 'success',
+      'message' => 'Laporan berhasil dikirim',
+      'urlPDF' => $url
+    ]);
+  }
+
+  private function sendWhatsApp($fileUrl)
+  {
+    $token = "eY94qtJeSPbYDPSiADTw"; // pastikan benar
+    $target = "6281524047314";
+
+    $message = "📊 Laporan Harian\n\nDownload:\n$fileUrl";
+
+    $curl = curl_init();
+
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => 'https://api.fonnte.com/send',
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_POSTFIELDS => array(
+        'target' => $target,
+        'message' => $message,
+      ),
+      CURLOPT_HTTPHEADER => array(
+        "Authorization: $token"
+      ),
+    ));
+
+    $response = curl_exec($curl);
+    curl_close($curl);
+
+    log_message('info', 'WA Response: ' . $response);
+  }
+
+  public function viewDailyReport()
+  {
+    $db = \Config\Database::connect();
+
+    // =========================
+    // 1. AMBIL DATA (REUSE LOGIC)
+    // =========================
+    $day = 0;
+
+    // Summary
+    $summary = $this->generateSummary([
+      'branch_id' => null
+    ], false, $day);
+
+    // Branch
+    $branchQuery = $db->query("
+      SELECT
+        b.branch_id,
+        b.branch_name,
+        COUNT(t.id) AS total_transactions,
+        COALESCE(SUM(t.total_price),0) AS total_income,
+
+        COALESCE(SUM(CASE WHEN t.payment_method = 'cash' THEN t.total_price ELSE 0 END),0) AS total_income_cash,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'transfer_bank' THEN t.total_price ELSE 0 END),0) AS total_income_transfer_bank,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'qris' THEN t.total_price ELSE 0 END),0) AS total_income_qris,
+        COALESCE(SUM(CASE WHEN t.payment_method = 'shopee' THEN t.total_price ELSE 0 END),0) AS total_income_shopee
+        
+      FROM transactions t
+      JOIN branch b ON t.branch_id = b.branch_id
+      WHERE DATE(t.date_time) = CURDATE()
+      GROUP BY b.branch_id, b.branch_name
+      ORDER BY total_income DESC
+    ");
+
+    $branches = $branchQuery->getResult();
+
+    // Top Selling (limit 5)
+    $topSelling = $db->query("
+      SELECT 
+        b.branch_id,
+        b.branch_name,
+        p.name AS product_name,
+        pv.weight_grams,
+        SUM(td.quantity) as total_sold,
+        SUM(td.subtotal) as total_sales
+      FROM transaction_details td
+      JOIN product_variants pv ON pv.id = td.product_variant_id
+      JOIN products p ON p.id = pv.product_id
+      JOIN transactions t ON t.id = td.transaction_id
+      JOIN branch b ON b.branch_id = t.branch_id
+      WHERE DATE(t.date_time) = CURDATE()
+      GROUP BY b.branch_id, pv.id
+      ORDER BY b.branch_id, total_sold DESC
+    ")->getResult();
+
+    $groupedProducts = [];
+
+    foreach ($topSelling as $row) {
+      $branchId = $row->branch_id;
+
+      if (!isset($groupedProducts[$branchId])) {
+        $groupedProducts[$branchId] = [
+          'branch_name' => $row->branch_name,
+          'products' => []
+        ];
+      }
+
+      $groupedProducts[$branchId]['products'][] = [
+        'product_name' => $this->formatProductName($row->product_name, $row->weight_grams),
+        'total_sold' => $row->total_sold,
+        'total_sales' => $row->total_sales,
+      ];
+    }
+
+    $hourlySales = $db->query("
+      SELECT 
+        b.branch_name,
+        HOUR(t.date_time) as hour,
+        SUM(t.total_price) as total_sales
+      FROM transactions t
+      JOIN branch b ON b.branch_id = t.branch_id
+      WHERE DATE(t.date_time) = CURDATE()
+      GROUP BY b.branch_id, HOUR(t.date_time)
+      ORDER BY hour ASC
+    ")->getResult();
+
+    $labels = range(9, 22); // jam kerja
+    $datasets = [];
+
+    // =========================
+    // 1. BUILD DATASET
+    // =========================
+    foreach ($hourlySales as $row) {
+      $branch = $row->branch_name;
+      $hour = (int)$row->hour;
+      $sales = (int)$row->total_sales;
+
+      if (!isset($datasets[$branch])) {
+        $datasets[$branch] = array_fill(0, 24, 0);
+      }
+
+      $datasets[$branch][$hour] = $sales;
+    }
+
+    // =========================
+    // 2. POTONG JAM 9 - 22
+    // =========================
+    foreach ($datasets as $branch => $data) {
+      $datasets[$branch] = array_slice($data, 9, 14); // 9–22
+    }
+
+    // =========================
+    // 3. KONVERSI KE RIBUAN (BIAR CLEAN)
+    // =========================
+    foreach ($datasets as $branch => $data) {
+      $datasets[$branch] = array_map(function ($v) {
+        return round($v / 1000); // jadi "k"
+      }, $data);
+    }
+
+    // =========================
+    // 4. BUILD CHART CONFIG
+    // =========================
+    $chartConfig = [
+      "type" => "line",
+      "data" => [
+        "labels" => array_map(fn($h) => sprintf("%02d.00", $h), $labels),
+        "datasets" => []
+      ],
+      "options" => [
+        "plugins" => [
+          "title" => [
+            "display" => true,
+            "text" => "Grafik Penjualan Harian per Jam (dalam ribuan Rupiah)"
+          ],
+          "legend" => [
+            "position" => "bottom"
+          ]
+        ],
+        "elements" => [
+          "line" => [
+            "tension" => 0.3 // smooth line
+          ]
+        ]
+      ]
+    ];
+
+    // =========================
+    // 5. WARNA + DATASET
+    // =========================
+    $colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#8e44ad'];
+
+    $i = 0;
+    foreach ($datasets as $branch => $data) {
+      $chartConfig["data"]["datasets"][] = [
+        "label" => $branch,
+        "data" => array_values($data),
+        "fill" => false,
+        "borderColor" => $colors[$i % count($colors)],
+        "pointRadius" => 3
+      ];
+      $i++;
+    }
+
+    // =========================
+    // 6. GENERATE URL
+    // =========================
+    $chartUrl = "https://quickchart.io/chart?width=500&height=300&c=" . urlencode(json_encode($chartConfig));
+
+    $chartImagePath = FCPATH . "reports/chart.png";
+
+    function downloadImage($url, $path)
+    {
+      $ch = curl_init($url);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      $data = curl_exec($ch);
+      curl_close($ch);
+
+      if ($data) {
+        file_put_contents($path, $data);
+      }
+    }
+
+    // ambil gambar dari quickchart
+    $imageContent = downloadImage($chartUrl, $chartImagePath);
+
+    if ($imageContent !== false) {
+      file_put_contents($chartImagePath, $imageContent);
+    }
+
+    // =========================
+    // 2. GENERATE HTML (TEMPLATE)
+    // =========================
+    return view('pdf/daily_report', [
+      'summary' => $summary,
+      'branches' => $branches,
+      'products' => $groupedProducts,
+      'date' => date('Y-m-d'),
+      'chartUrl' => $chartUrl,
+      'chartImagePath' => $chartImagePath
+    ]);
+  }
+
+
+  public function formatProductName($name, $weight)
+  {
+    if (!$weight || $weight == 0) return $name;
+
+    if ($weight >= 1000) {
+      $kg = $weight / 1000;
+      return $name . ' (' . (intval($kg) == $kg ? $kg : number_format($kg, 2)) . 'kg)';
+    }
+
+    return $name . ' (' . $weight . 'gr)';
   }
 }
