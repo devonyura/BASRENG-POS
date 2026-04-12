@@ -38,14 +38,6 @@ $routes->group('api', ['filter' => 'auth'], function ($routes) {
   $routes->get('report/getBranchReport', 'ReportController::getBranchReport');
   $routes->get('report/top-selling', 'ReportController::topSelling');
 
-  // $routes->get('chart/getProductSellsReport', 'ChartController::getProductSellsReport');
-  // $routes->get('chart/getProductSellsReport/(:num)', 'ChartController::getProductSellsReport/$1');
-
-  // $routes->get('chart/getBranchReport', 'ChartController::getBranchReport');
-  // $routes->get('chart/getBranchReport/(:num)', 'ChartController::getBranchReport/$1');
-  // $routes->get('chart/branch-performance', 'ChartController::branchPerformance');
-  // $routes->get('chart/category-summary', 'ChartController::categorySummary');
-
   // users data
   $routes->resource('users', ['controller' => 'UsersController']);
   $routes->post('users/reset-password', 'UsersController::resetPassword');
@@ -72,6 +64,10 @@ $routes->group('api', ['filter' => 'auth'], function ($routes) {
 
   $routes->get('transaction-details/transaction/(:num)', 'TransactionsDetailsController::showByTransactionId/$1');
   $routes->resource('transaction-details', ['controller' => 'TransactionsDetailsController']);
+
+  // ============= PaymentProofs
+  $routes->post('payment-proofs/upload', 'PaymentProofController::upload');
+  $routes->get('payment-proofs/transaction/(:segment)', 'PaymentProofController::getByTransaction/$1');
 });
 
 $routes->get('api/logs', 'LogController::index');

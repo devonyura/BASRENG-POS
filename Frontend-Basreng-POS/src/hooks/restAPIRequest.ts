@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 // export const BASE_API_URL = "https://restapi.basrenghosting.biz.id"
 export const BASE_API_URL = "http://localhost:8080"
 export const FILE_BASE_URL =
-  `${BASE_API_URL}/uploads/products`;
+	`${BASE_API_URL}/uploads/products`;
 
 export interface ApiResponse {
 	success: boolean;
@@ -12,19 +12,19 @@ export interface ApiResponse {
 }
 
 export interface ProductVariant {
-  variant_id: number
-  product_id: number
-  weight_grams: number
-  price: number
+	variant_id: number
+	product_id: number
+	weight_grams: number
+	price: number
 }
 
 export interface DataProduct {
-  id: number
-  name: string
-  category_id: number
-  descriptions?: string
-  img?: string
-  variants?: ProductVariant[]
+	id: number
+	name: string
+	category_id: number
+	descriptions?: string
+	img?: string
+	variants?: ProductVariant[]
 }
 
 export interface Categories {
@@ -65,9 +65,9 @@ interface Transaction {
 	customer_address: string | null;
 	customer_phone: string | null;
 	notes: string | null;
-	reseller_id: number|null;
-	transaction_type: string|null;
-	shopee_code: string|null|undefined;
+	reseller_id: number | null;
+	transaction_type: string | null;
+	shopee_code: string | null | undefined;
 }
 
 interface TransactionDetails {
@@ -614,6 +614,64 @@ export const updateData = async (id: string, updatedStudent: object): Promise<Ap
 			const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan";
 			console.error("Error Editing Student:", error);
 			reject({ success: false, error: errorMessage });
+		}
+	});
+};
+
+export const uploadPaymentProof = async (
+	file: File,
+	transactionCode: string
+): Promise<ApiResponse> => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const TOKEN = Cookies.get("token");
+
+			const apiOnline = await isApiOnline();
+			if (!apiOnline) {
+				resolve({
+					success: false,
+					error: "Tidak dapat terhubung ke server.",
+				});
+				return;
+			}
+
+			const formData = new FormData();
+			formData.append("file", file);
+			formData.append("transaction_code", transactionCode);
+
+			const response = await fetch(
+				`${BASE_API_URL}/api/payment-proofs/upload`,
+				{
+					method: "POST",
+					credentials: "include",
+					headers: {
+						Authorization: `Bearer ${TOKEN}`,
+						// ❗ JANGAN pakai Content-Type di FormData
+					},
+					body: formData,
+				}
+			);
+
+			checkOKResponse(response);
+
+			const data = await response.json();
+
+			console.info("Upload Payment Proof:", data);
+
+			resolve({
+				success: true,
+				data: data,
+			});
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Terjadi kesalahan";
+
+			console.error("Error uploadPaymentProof:", error);
+
+			reject({
+				success: false,
+				error: errorMessage,
+			});
 		}
 	});
 };

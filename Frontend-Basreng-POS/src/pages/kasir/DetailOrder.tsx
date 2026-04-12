@@ -22,6 +22,7 @@ import {
   getBranch,
   TransactionPayload,
   createTransaction,
+  uploadPaymentProof,
 } from "../../hooks/restAPIRequest";
 import { getResellers, Reseller } from "../../hooks/restAPIResellers";
 import { useAuth } from "../../hooks/useAuthCookie";
@@ -33,7 +34,6 @@ import Receipt, { BranchData } from "../../components/Receipt";
 // Redux
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../redux/store";
-import ProductCartItem from "../../components/ProductCartItem";
 import { selectorCartTotal } from "../../redux/cartSelectors";
 import { clearCart } from "../../redux/cartSlice";
 
@@ -88,6 +88,35 @@ const DetailOrder: React.FC = () => {
   const [isCash, setIsCash] = useState(false);
   const [isOnlineOrder, setIsOnlineOrder] = useState(false);
   const [isShopeeOrder, setIsShopeeOrder] = useState(false);
+
+  // ============ For Payment Proof
+  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
+
+  // =========== payment proof method
+  const handleUploadPaymentProof = async (file: File) => {
+    try {
+      setIsUploadingProof(true);
+
+      if (transactionCode == "") {
+        console.error("Transaction code belum ada");
+        return;
+      }
+
+      const result = await uploadPaymentProof(file, transactionCode);
+
+      if (result.success) {
+        setPaymentProofUrl(result.data.data.file_url);
+      } else {
+        console.error("Upload gagal:", result.error);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+    } finally {
+      setIsUploadingProof(false);
+    }
+  };
 
   // Form
   const [cashGiven, setCashGiven] = useState<number | null>(null);
@@ -244,7 +273,7 @@ const DetailOrder: React.FC = () => {
 
     const transactionData: TransactionPayload = {
       transaction: {
-        transaction_code: generateReceiptNumber(Number(branchID), username),
+        transaction_code: transactionCode,
         user_id: Number(idUser),
         date_time: formattedDateTime,
         total_price: totalBeforeDiscount,
@@ -290,6 +319,13 @@ const DetailOrder: React.FC = () => {
 
         // history.push('/student-list')
         console.log("Transaksi Berhasil Dicatat!", result);
+
+        if (paymentMethod === "qris" || paymentMethod === "transfer_bank") {
+          if (paymentProof && transactionCode) {
+            await handleUploadPaymentProof(paymentProof);
+          }
+        }
+
         setShowSuccessAlert(true);
       } else {
         // setAlert({
@@ -334,6 +370,13 @@ const DetailOrder: React.FC = () => {
 
     // tutup modal detail order
     modal.current?.dismiss();
+
+    // reset state bukti pembayaran
+    setPaymentProof(null);
+    setPaymentProofUrl(null);
+
+    // reset transaction code state
+    setTransactionCode("");
   };
   // ======================================================================= Reset Input End
 
@@ -377,6 +420,24 @@ const DetailOrder: React.FC = () => {
     console.log("selectedResellerId:", selectedResellerId);
   }, [selectedResellerId]);
 
+  // ===========  for Generate transaction Code
+  const [transactionCode, setTransactionCode] = useState<string>("");
+
+  // useEffect(() => {
+  //   if (modal.current) {
+  //     const code = generateReceiptNumber(Number(branchID), username);
+  //     setTransactionCode(code);
+  //   }
+  // }, [branchID, username]);
+
+  useEffect(() => {
+    return () => {
+      if (paymentProof) {
+        URL.revokeObjectURL(URL.createObjectURL(paymentProof));
+      }
+    };
+  }, [paymentProof]);
+
   return (
     <>
       <IonFab vertical="bottom" horizontal="end" slot="fixed" color="danger">
@@ -385,9 +446,12 @@ const DetailOrder: React.FC = () => {
         )}
         <IonFabButton
           id="open-detail-order"
-          onClick={() =>
-            cartItems.length === 0 ? modal.current?.dismiss() : ""
-          }
+          onClick={() => {
+            if (cartItems.length === 0) return;
+
+            const code = generateReceiptNumber(Number(branchID), username);
+            setTransactionCode(code);
+          }}
         >
           <IonIcon icon={cart} />
         </IonFabButton>
@@ -460,6 +524,43 @@ const DetailOrder: React.FC = () => {
                 isCash={isCash}
                 setIsCash={setIsCash}
               />
+              {(paymentMethod === "qris" ||
+                paymentMethod === "transfer_bank") && (
+                <IonItem>
+                  <div style={{ width: "100%" }}>
+                    <p>
+                      <b>Upload Bukti Pembayaran</b>
+                    </p>
+
+                    {!paymentProof && (
+                      <>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e: any) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              setPaymentProof(file);
+                            }
+                          }}
+                        />
+                        {isUploadingProof && <p>Uploading...</p>}
+                      </>
+                    )}
+
+                    {paymentProof && (
+                      <div style={{ marginTop: "10px" }}>
+                        <img
+                          src={URL.createObjectURL(paymentProof)}
+                          alt="bukti"
+                          style={{ width: "100%", borderRadius: "8px" }}
+                        />
+                        <p style={{ color: "green" }}>Siap diUpload ✅</p>
+                      </div>
+                    )}
+                  </div>
+                </IonItem>
+              )}
               <CashPaymentSection
                 isCash={isCash}
                 cashGiven={cashGiven}
@@ -476,7 +577,7 @@ const DetailOrder: React.FC = () => {
             isOnlineOrders={isOnlineOrder}
             customerInfo={customerInfo}
             cartItems={cartItems}
-            receiptNoteNumber={receiptNoteNumber || "0"}
+            receiptNoteNumber={transactionCode || "0"}
             discount={discount}
             is_reseller={isReseller}
             isShopeeOrder={isShopeeOrder}
@@ -489,6 +590,7 @@ const DetailOrder: React.FC = () => {
             cashGiven={cashGiven}
             onCheckout={() => setAlertBeforeSubmit(true)}
             paymentMethod={paymentMethod}
+            paymentProof={paymentProof}
           />
           <div className="space"></div>
         </IonContent>

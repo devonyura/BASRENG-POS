@@ -6,6 +6,7 @@ interface Props {
   cashGiven: number | null;
   onCheckout: () => void;
   paymentMethod: string;
+  paymentProof: File | null;
 }
 
 const CheckoutButton: React.FC<Props> = ({
@@ -13,6 +14,7 @@ const CheckoutButton: React.FC<Props> = ({
   cashGiven,
   onCheckout,
   paymentMethod,
+  paymentProof,
 }) => {
   console.log("cashGiven:", cashGiven);
   return (
@@ -20,7 +22,9 @@ const CheckoutButton: React.FC<Props> = ({
       expand="block"
       onClick={onCheckout}
       disabled={
-        paymentMethod === "cash" && (cashGiven === 0 || cashGiven === null)
+        (paymentMethod === "cash" && (cashGiven === 0 || cashGiven === null)) ||
+        ((paymentMethod === "qris" || paymentMethod === "transfer_bank") &&
+          !paymentProof)
       }
     >
       Selesaikan Transaksi

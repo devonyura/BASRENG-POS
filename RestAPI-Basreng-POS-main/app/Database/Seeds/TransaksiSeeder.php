@@ -10,44 +10,45 @@ class TransaksiSeeder extends Seeder
   {
     $db = \Config\Database::connect();
 
-    // Matikan foreign key sementara
+    // =========================
+    // RESET TABLE
+    // =========================
     $db->query('SET FOREIGN_KEY_CHECKS=0');
-
-    // Kosongkan tabel
     $db->table('transaction_details')->truncate();
     $db->table('transactions')->truncate();
-
-    // Aktifkan kembali foreign key
     $db->query('SET FOREIGN_KEY_CHECKS=1');
 
     $products = $db->table('products')->get()->getResultArray();
     $variants = $db->table('product_variants')->get()->getResultArray();
 
-    // ===========================
-    //  USER PER BRANCH
-    // ===========================
-
+    // =========================
+    // USER PER BRANCH
+    // =========================
     $userByBranch = [
-      1 => [1, 5], // branch 1
-      2 => [4, 3], // branch 2
-      3 => [6], // branch 2
+      1 => [1, 5],
+      2 => [4, 3],
+      3 => [6],
     ];
 
-    $branches = [1, 2];
+    $branches = [1, 2, 3];
 
-    // mapping variant per product
+    // =========================
+    // VARIANT MAP
+    // =========================
     $variantMap = [];
     foreach ($variants as $v) {
       $variantMap[$v['product_id']][] = $v;
     }
 
-    // kategori by category_id
+    // =========================
+    // KATEGORI
+    // =========================
     $kategori = [
-      1 => [], // Cemilan
-      2 => [], // Mochi
-      3 => [], // Sushi
-      4 => [], // Paket
-      5 => [], // Donat Mochi
+      1 => [],
+      2 => [],
+      3 => [],
+      4 => [],
+      5 => [],
     ];
 
     foreach ($products as $p) {
@@ -61,16 +62,46 @@ class TransaksiSeeder extends Seeder
 
     $dayIndex = 0;
 
+    // =========================
+    // 🆕 SHOPEE SCHEDULE (1-3x per bulan)
+    // =========================
+    $shopeeSchedule = [];
+    $current = $start;
+
+    while ($current <= $end) {
+      $monthKey = date('Y-m', $current);
+
+      if (!isset($shopeeSchedule[$monthKey])) {
+        $count = rand(1, 3);
+        $days = [];
+
+        while (count($days) < $count) {
+          $randomDay = rand(1, date('t', $current));
+          $days[] = $randomDay;
+          $days = array_unique($days);
+        }
+
+        $shopeeSchedule[$monthKey] = $days;
+      }
+
+      $current = strtotime('+1 month', $current);
+    }
+
     while ($start <= $end) {
 
       $date = date('Y-m-d', $start);
+      $monthKey = date('Y-m', $start);
+      $dayOfMonth = date('j', $start);
 
-      // Weekend lebih ramai 
+      // =========================
+      // 🆕 LIMIT SUSHI PER HARI
+      // =========================
+      $sushiDailyLimit = 100;
+      $sushiSoldToday = 0;
+
       $isWeekend = date('N', $start) >= 6;
-      // lebih ringan [SET MIN-MAX GENERATE]
       $totalTransaksi = $isWeekend ? rand(20, 65) : rand(30, 45);
 
-      // Paket 1x per minggu
       if ($dayIndex % 7 === 0) {
         $paketDay = rand(0, 6);
       }
@@ -79,30 +110,30 @@ class TransaksiSeeder extends Seeder
 
         $details = [];
 
-        // ===================
-        // PILIH BRANCH & USER
-        // ===================
+        // =========================
+        // BRANCH & USER
+        // =========================
         $branchId = $branches[array_rand($branches)];
-        $userList = $userByBranch[$branchId];
-        $userId = $userList[array_rand($userList)];
+        $userId = $userByBranch[$branchId][array_rand($userByBranch[$branchId])];
 
         $totalPrice = 0;
 
-        $isPaket = ($dayIndex % 7 === $paketDay && $i === 0);
+        // =========================
+        // 🆕 CEK SHOPEE
+        // =========================
+        $isShopee = in_array($dayOfMonth, $shopeeSchedule[$monthKey]) && $i === 0;
 
-        // =====================
-        // JAM REALISTIS
-        // =====================
+        $isPaket = ($dayIndex % 7 === $paketDay && $i === 0 && !$isShopee);
+
         $hour = $this->generateRealisticHour();
         $minute = rand(0, 59);
 
-        // =====================
-        // TRANSAKSI PAKET
-        // =====================
-        if ($isPaket && !empty($kategori[4])) {
+        // =========================
+        // SHOPEE = BEHAVIOR PAKET
+        // =========================
+        if ($isShopee && !empty($kategori[4])) {
 
           $product = $kategori[4][array_rand($kategori[4])];
-
           if (empty($variantMap[$product['id']])) continue;
 
           $variant = $variantMap[$product['id']][0];
@@ -113,38 +144,78 @@ class TransaksiSeeder extends Seeder
           ];
 
           $totalPrice += $variant['price'];
-        } else {
+        }
+
+        // =========================
+        // PAKET NORMAL
+        // =========================
+        elseif ($isPaket && !empty($kategori[4])) {
+
+          $product = $kategori[4][array_rand($kategori[4])];
+          if (empty($variantMap[$product['id']])) continue;
+
+          $variant = $variantMap[$product['id']][0];
+
+          $details[] = [
+            'variant_id' => $variant['id'],
+            'quantity'   => 1
+          ];
+
+          $totalPrice += $variant['price'];
+        }
+
+        // =========================
+        // TRANSAKSI NORMAL
+        // =========================
+        else {
 
           $totalItem = rand(2, 8);
 
           for ($j = 0; $j < $totalItem; $j++) {
 
-            // bobot: cemilan paling sering
             $jenis = $this->weightedCategory();
-
             if (empty($kategori[$jenis])) continue;
 
             $product = $kategori[$jenis][array_rand($kategori[$jenis])];
-
             if (empty($variantMap[$product['id']])) continue;
 
             $variant = $variantMap[$product['id']][array_rand($variantMap[$product['id']])];
 
-            switch ($jenis) {
-              case 1:
-                $qty = rand(1, 3);
-                break;
-              case 2:
-                $qty = rand(1, 2);
-                break;
-              case 3:
-                $qty = rand(4, 12);
-                break;
-              case 5:
-                $qty = rand(1, 2);
-                break;
-              default:
-                $qty = 1;
+            // =========================
+            // 🆕 KHUSUS SUSHI LIMIT
+            // =========================
+            if ($product['id'] == 48) {
+
+              if ($sushiSoldToday >= $sushiDailyLimit) {
+                continue; // skip sushi kalau sudah limit
+              }
+
+              $remaining = $sushiDailyLimit - $sushiSoldToday;
+
+              $qty = rand(4, 12);
+              if ($qty > $remaining) {
+                $qty = $remaining;
+              }
+
+              $sushiSoldToday += $qty;
+            } else {
+
+              switch ($jenis) {
+                case 1:
+                  $qty = rand(1, 3);
+                  break;
+                case 2:
+                  $qty = rand(1, 2);
+                  break;
+                case 3:
+                  $qty = rand(4, 12);
+                  break;
+                case 5:
+                  $qty = rand(1, 2);
+                  break;
+                default:
+                  $qty = 1;
+              }
             }
 
             $details[] = [
@@ -158,10 +229,26 @@ class TransaksiSeeder extends Seeder
 
         if (empty($details)) continue;
 
-        // =====================
-        // PAYMENT REALISTIS
-        // =====================
-        $paymentMethod = rand(1, 100) <= 70 ? 'cash' : 'qris';
+        // =========================
+        // 🆕 PAYMENT METHOD (3 TIPE)
+        // =========================
+        if ($isShopee) {
+          $transactionType = 'shopee';
+          $paymentMethod = 'transfer_bank';
+        } else {
+
+          $randPay = rand(1, 100);
+
+          if ($randPay <= 60) {
+            $paymentMethod = 'cash';
+          } elseif ($randPay <= 85) {
+            $paymentMethod = 'qris';
+          } else {
+            $paymentMethod = 'transfer_bank';
+          }
+
+          $transactionType = 'POS';
+        }
 
         if ($paymentMethod === 'cash') {
           $cashAmount = $this->generateCash($totalPrice);
@@ -181,8 +268,8 @@ class TransaksiSeeder extends Seeder
             'cash_amount'      => $cashAmount,
             'change_amount'    => $change,
             'payment_method'   => $paymentMethod,
-            'is_online_order'  => rand(1, 100) <= 20 ? 1 : 0,
-            'transaction_type' => 'POS',
+            'is_online_order'  => $isShopee ? 1 : (rand(1, 100) <= 20 ? 1 : 0),
+            'transaction_type' => $transactionType,
             'is_reseller'      => 0
           ],
           'transaction_details' => $details
@@ -196,6 +283,9 @@ class TransaksiSeeder extends Seeder
     }
   }
 
+  // =========================
+  // (TIDAK BERUBAH)
+  // =========================
   private function insertTransaction($data)
   {
     $db = \Config\Database::connect();
@@ -217,9 +307,7 @@ class TransaksiSeeder extends Seeder
           ->get()
           ->getRowArray();
 
-        if (!$variant) {
-          throw new \Exception("Variant tidak ditemukan");
-        }
+        if (!$variant) throw new \Exception("Variant tidak ditemukan");
 
         $transactionDetailsModel->insert([
           'transaction_id'      => $trxId,
@@ -240,33 +328,20 @@ class TransaksiSeeder extends Seeder
       $db->transRollback();
     }
   }
+
   private function generateRealisticHour()
   {
     $rand = rand(1, 100);
 
-    if ($rand <= 10) return rand(8, 10);   // pagi (sepi)
-    if ($rand <= 40) return rand(11, 14);  // siang
-    if ($rand <= 80) return rand(15, 18);  // sore (ramai)
-    return rand(19, 22);                  // malam (puncak)
+    if ($rand <= 10) return rand(8, 10);
+    if ($rand <= 40) return rand(11, 14);
+    if ($rand <= 80) return rand(15, 18);
+    return rand(19, 22);
   }
 
   private function weightedCategory()
   {
-    $pool = [
-      1,
-      1,
-      1,
-      1,
-      1, // cemilan dominan
-      2,
-      2,
-      2,
-      3,
-      3,
-      5,
-      5
-    ];
-
+    $pool = [1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 5, 5];
     return $pool[array_rand($pool)];
   }
 
