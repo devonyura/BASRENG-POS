@@ -29,7 +29,6 @@ import { rupiahFormat, shortDate } from "../../hooks/formatting";
 import dayjs from "dayjs";
 import TransactionHistoryDetail from "../kasir/TransactionHistoryDetail";
 import { useAuth } from "../../context/AuthContext";
-import { color } from "html2canvas/dist/types/css/types/color";
 
 export interface Branch {
   branch_id: string;
@@ -381,18 +380,6 @@ const TransactionHistory: React.FC = () => {
             type: "radio",
             value: "10",
             checked: selectedDateFilter === "10",
-          },
-          {
-            label: "Jan 2024",
-            type: "radio",
-            value: "jan-2024",
-            checked: selectedDateFilter === "jan-2024",
-          },
-          {
-            label: "Mar 2025",
-            type: "radio",
-            value: "mar-2025",
-            checked: selectedDateFilter === "mar-2025",
           },
         ]}
         buttons={[

@@ -675,3 +675,46 @@ export const uploadPaymentProof = async (
 		}
 	});
 };
+
+export const getPaymentProofByTransaction = async (
+	transactionCode: string
+): Promise<ApiResponse> => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const TOKEN = Cookies.get("token");
+
+			const apiOnline = await isApiOnline();
+			if (!apiOnline) {
+				resolve({
+					success: false,
+					error: "Tidak dapat terhubung ke server"
+				})
+			}
+
+			const response = await fetch(
+				`${BASE_API_URL}/api/payment-proofs/transaction/${transactionCode}`,
+				{
+					method: "GET",
+					credentials: "include",
+					headers: {
+						Authorization: `Bearer ${TOKEN}`,
+					},
+				}
+			)
+
+			checkOKResponse(response);
+
+			const data = await response.json();
+
+			resolve({
+				success: true,
+				data: data.data
+			});
+		} catch (error) {
+			reject({
+				success: false,
+				error: error instanceof Error ? error.message : "Error",
+			})
+		}
+	})
+}

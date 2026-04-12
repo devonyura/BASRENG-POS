@@ -10,12 +10,13 @@ import {
 } from "@ionic/react";
 
 import { useState, useEffect, useRef } from "react";
-import { findTransactionHistory } from "../../hooks/restAPIRequest";
-import { useAuth } from "../../hooks/useAuthCookie";
+import {
+  findTransactionHistory,
+  getPaymentProofByTransaction,
+} from "../../hooks/restAPIRequest";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
 import "./DetailOrder.css";
-import { OverlayEventDetail } from "@ionic/core/components";
-import ReceiptHistory, { BranchData } from "../../components/ReceiptHistory";
+import ReceiptHistory from "../../components/ReceiptHistory";
 
 import React from "react";
 
@@ -87,12 +88,38 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
     hideButton: false,
   });
 
+  // for payment proof view
+  const [paymentProof, setPaymentProof] = useState<any | null>(null);
+  const [showProofModal, setShowProofModal] = useState(false);
+  const [isLoadingProof, setIsLoadingProof] = useState(false);
+
+  const handleLoadPaymentProof = async () => {
+    if (!transactionCode) {
+      return;
+    }
+
+    try {
+      setIsLoadingProof(true);
+
+      const result = await getPaymentProofByTransaction(transactionCode);
+
+      if (result.success) {
+        setPaymentProof(result.data);
+        setShowProofModal(true);
+      }
+    } catch (err) {
+      console.error("Gagal load bukti:", err);
+    } finally {
+      setIsLoadingProof(false);
+    }
+  };
+
   useEffect(() => {
     if (transactionCode) {
       (async () => {
         try {
           const data = await findTransactionHistory(transactionCode);
-          console.log(data);
+          // console.log(data);
           setTransactionData(data);
         } catch (error) {
           console.error("Gagal Ambil Detail Transaksi", error);
@@ -194,9 +221,24 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
                 transactionData.transactions.shopee_code ? true : false
               }
               shopeeCode={transactionData.transactions.shopee_code}
+              paymentMethod={transactionData.transactions.payment_method}
+              date={transactionData.transactions.date_time}
             />
           )}
-
+          {transactionData?.transactions.payment_method !== "cash" && (
+            <IonButton
+              expand="block"
+              color="warning"
+              onClick={handleLoadPaymentProof}
+              disabled={isLoadingProof}
+            >
+              {isLoadingProof ? (
+                <IonSpinner name="dots" />
+              ) : (
+                "Lihat Bukti Pembayaran"
+              )}
+            </IonButton>
+          )}
           <IonButton expand="block" onClick={onDidDismiss}>
             Kembali
           </IonButton>
@@ -220,6 +262,44 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
         }
         hideButton={alert.hideButton}
       />
+      <IonModal
+        isOpen={showProofModal}
+        onDidDismiss={() => {
+          setShowProofModal(false);
+          setPaymentProof(null);
+        }}
+      >
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Bukti Pembayaran</IonTitle>
+            <IonButtons slot="start">
+              <IonButton onClick={() => setShowProofModal(false)}>
+                Tutup
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          {paymentProof ? (
+            <div>
+              <p>
+                Metode:{" "}
+                {transactionData?.transactions.payment_method.toUpperCase()}
+              </p>
+              <img
+                src={paymentProof.file_url}
+                alt="bukti"
+                style={{ width: "100%", borderRadius: "10px" }}
+              />
+              <p style={{ fontSize: "18px", color: "gray" }}>
+                {paymentProof.uploaded_at}
+              </p>
+            </div>
+          ) : (
+            <p>Tidak ada bukti pembayaran</p>
+          )}
+        </IonContent>
+      </IonModal>
     </>
   );
 };

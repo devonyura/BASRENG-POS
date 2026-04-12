@@ -13,6 +13,7 @@ import {
   IonIcon,
   IonItem,
   useIonViewWillEnter,
+  IonImg,
 } from "@ionic/react";
 import { add, remove, trashBin } from "ionicons/icons";
 import { rupiahFormat, formatProductName } from "../hooks/formatting";
@@ -48,6 +49,8 @@ interface ReceiptHistoryProps {
   is_reseller: boolean;
   isShopeeOrder: boolean;
   shopeeCode: string | null | undefined;
+  paymentMethod: string | null | undefined;
+  date?: string;
 }
 
 export interface BranchData {
@@ -71,6 +74,8 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
       is_reseller,
       isShopeeOrder,
       shopeeCode,
+      paymentMethod,
+      date,
     } = props;
 
     const [branchData, setBranchData] = useState<BranchData | null>(null);
@@ -92,6 +97,7 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
 
     return (
       <div className="receipt-container" ref={ref}>
+        <IonImg src="/logo-struk.png" className="struk-logo" alt="App Logo" />
         <table className="receipt">
           <thead>
             <tr className="receipt-title">
@@ -152,7 +158,12 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
                 </td>
               </tr>
             )}
-
+            <tr>
+              <td className="tr-title" colSpan={3}>
+                Pembayaran
+              </td>
+              <td className="tr-title">{paymentMethod}</td>
+            </tr>
             <tr>
               <td className="tr-title" colSpan={3}>
                 Total
@@ -216,7 +227,9 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
               </tr>
             )}
             <tr>
-              <td colSpan={3}>Tgl. 28-10-2025</td>
+              <td colSpan={3}>
+                Tgl. {date ?? new Date().toLocaleDateString("id-ID")}
+              </td>
               <td>Cabang: {branchData?.branch_name}</td>
             </tr>
             <tr>
