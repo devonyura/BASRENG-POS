@@ -1,55 +1,100 @@
-// src/api/restAPIReport.tsx
+// src/api/restAPIReport.ts
 
 import Cookies from "js-cookie";
 import { BASE_API_URL, isApiOnline, checkOKResponse } from "./restAPIRequest";
-import { AllReportsResponse, AllDetailReportsResponse } from "./interfaces";
 
-export const getAllReports = async (day: string = '', month: string = '', year: string = ''): Promise<AllReportsResponse | any> => {
-  try {
-    const TOKEN = Cookies.get("token");
-    const apiOnline = await isApiOnline();
-    if (!apiOnline) throw new Error("Tidak dapat terhubung ke server.");
+// ======================
+// INTERFACES
+// ======================
 
-    const url = `${BASE_API_URL}/api/report/getAllReports?day=${day}&month=${month}&year=${year}`;
-    const response = await fetch(url, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${TOKEN}`,
-      },
-    });
+export interface PaymentSummary {
+  cash: number;
+  transfer_bank: number;
+  qris: number;
+  shopee: number;
+}
 
-    checkOKResponse(response);
-    const data: AllReportsResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching all reports:", error);
-    return error;
-  }
+export interface SummaryReport {
+  total_sales: number;
+  total_transactions: number;
+  payment_summary: PaymentSummary;
+}
+
+export interface BranchReport {
+  branch_id: string;
+  branch_name: string;
+  total_transactions: string;
+  total_income: string;
+}
+
+export interface ChartData {
+  labels: string[];
+  datasets: Record<string, any>; // fleksibel (array atau object)
+}
+
+export interface ReportResponse {
+  status: string;
+  type: "daily" | "range" | "monthly";
+  summary: SummaryReport;
+  branches: BranchReport[];
+  chart: ChartData;
+}
+
+// ======================
+// API FUNCTIONS
+// ======================
+
+const getHeaders = () => {
+  const TOKEN = Cookies.get("token");
+  return {
+    Authorization: `Bearer ${TOKEN}`,
+  };
 };
 
-export const getDetailReport = async (date: string = ''): Promise<AllDetailReportsResponse | any> => {
-  try {
-    const TOKEN = Cookies.get("token");
-    const apiOnline = await isApiOnline();
-    if (!apiOnline) throw new Error("Tidak dapat terhubung ke server.");
+// DAILY
+export const getDailyReport = async (): Promise<ReportResponse> => {
+  const apiOnline = await isApiOnline();
+  if (!apiOnline) throw new Error("Server offline");
 
-    const url = `${BASE_API_URL}/api/report/getDetailReport/${date}`;
-    const response = await fetch(url, {
+  const response = await fetch(`${BASE_API_URL}/api/reports/daily`, {
+    method: "GET",
+    headers: getHeaders(),
+  });
+
+  checkOKResponse(response);
+  return await response.json();
+};
+
+// RANGE
+export const getRangeReport = async (days: string): Promise<ReportResponse> => {
+  const apiOnline = await isApiOnline();
+  if (!apiOnline) throw new Error("Server offline");
+
+  const response = await fetch(
+    `${BASE_API_URL}/api/reports/range?days=${days}`,
+    {
       method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${TOKEN}`,
-      },
-    });
+      headers: getHeaders(),
+    }
+  );
 
-    checkOKResponse(response);
-    const data: AllDetailReportsResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching all reports:", error);
-    return error;
-  }
+  checkOKResponse(response);
+  return await response.json();
+};
+
+// MONTHLY
+export const getMonthlyReport = async (month: string): Promise<ReportResponse> => {
+  const apiOnline = await isApiOnline();
+  if (!apiOnline) throw new Error("Server offline");
+
+  const response = await fetch(
+    `${BASE_API_URL}/api/reports/monthly?month=${month}`,
+    {
+      method: "GET",
+      headers: getHeaders(),
+    }
+  );
+
+  checkOKResponse(response);
+  return await response.json();
 };

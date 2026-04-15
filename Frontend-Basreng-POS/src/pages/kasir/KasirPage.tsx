@@ -132,6 +132,8 @@ const KasirPage: React.FC = () => {
         <IonSegment
           value={selectedCategory}
           onIonChange={(e) => setSelectedCategory(String(e.detail.value!))}
+          class="ion-segment-custom"
+          scrollable={true}
         >
           {categories.map((cat) => (
             <IonSegmentButton key={cat.id} value={cat.id}>

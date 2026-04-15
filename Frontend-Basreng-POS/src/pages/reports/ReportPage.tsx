@@ -16,15 +16,20 @@ import {
   IonAccordionGroup,
   IonBackButton,
   IonButtons,
-  IonIcon
-} from '@ionic/react';
-import { useState, useRef } from 'react';
-import jsPDF from 'jspdf';
+  IonIcon,
+} from "@ionic/react";
+import { useState, useRef } from "react";
+import jsPDF from "jspdf";
 import { ChartRenderer } from "./ChartRenderer";
-import { getAllReports, getDetailReport } from '../../hooks/restAPIReport';
-import { TransactionsReport, ProductSellsReport } from '../../hooks/interfaces';
-import { generatePDFReport } from "./GenerateReportPDF";
-import { refresh } from 'ionicons/icons';
+import {
+  getDailyReport,
+  getRangeReport,
+  getMonthlyReport,
+  ReportResponse,
+} from "../../hooks/restAPIReport";
+import { TransactionsReport, ProductSellsReport } from "../../hooks/interfaces";
+// import { generatePDFReport } from "./GenerateReportPDF";
+import { refresh } from "ionicons/icons";
 
 // Tipe data yang akan digunakan
 interface DataReal {
@@ -33,10 +38,10 @@ interface DataReal {
 }
 
 interface GenerateReportReturn {
-  doc: jsPDF,
-  dataReal: {},
-  startDate: {},
-  endDate: {}
+  doc: jsPDF;
+  dataReal: {};
+  startDate: {};
+  endDate: {};
 }
 
 const ReportPage: React.FC = () => {
@@ -47,6 +52,8 @@ const ReportPage: React.FC = () => {
   // Loading indicator
   const [isLoading, setIsLoading] = useState(false);
 
+  const [reportData, setReportData] = useState<ReportResponse | null>(null);
+
   // Chart state
   const [isChartWidth, setIsChartWidth] = useState(false);
 
@@ -54,8 +61,11 @@ const ReportPage: React.FC = () => {
   const [pdfDoc, setPdfDoc] = useState<GenerateReportReturn | null>(null);
 
   // Data laporan
-  const [transactionReport, setTransactionReport] = useState<TransactionsReport>();
-  const [productSellsReport, setProductSellsReport] = useState<ProductSellsReport[] | null | undefined>();
+  const [transactionReport, setTransactionReport] =
+    useState<TransactionsReport>();
+  const [productSellsReport, setProductSellsReport] = useState<
+    ProductSellsReport[] | null | undefined
+  >();
 
   // Alert state
   const [showAlert, setShowAlert] = useState(false);
@@ -77,48 +87,50 @@ const ReportPage: React.FC = () => {
   // Fungsi Generate Laporan
   // ======================
   const handleGenerate = async (
-    dayInput: string = '',
-    monthInput: string = '',
-    yearInput: string = '',
-    isDayReportProp: boolean = false
+    type: "daily" | "range" | "monthly",
+    value?: string,
   ) => {
-    setIsChartWidth(false);
     setIsLoading(true);
+    setIsChartWidth(false);
 
     try {
-      let dataChart;
-      if (isDayReportProp) {
-        setIsDayReport(true);
-        dataChart = await getDetailReport(dayInput);
+      let data: ReportResponse;
+
+      if (type === "daily") {
+        data = await getDailyReport();
+      } else if (type === "range") {
+        data = await getRangeReport(value || "7");
       } else {
-        dataChart = await getAllReports(dayInput, monthInput, yearInput);
+        data = await getMonthlyReport(value || "");
       }
 
-      // Cek apakah data kosong
-      const isEmptyData =
-        (dataChart.transactions_report?.length ?? 0) === 0 &&
-        (dataChart.product_sells_report?.length ?? 0) === 0 &&
-        (dataChart.branch_report?.length ?? 0) === 0;
-
-      if (isEmptyData) {
-        setAlertMessage(`Laporan pada ${dayInput || '...'}-${monthInput || '...'}-${yearInput || '...'} tidak ada.`);
+      // validasi kosong
+      if (!data || !data.summary || data.summary.total_transactions === 0) {
+        setAlertMessage("Data laporan tidak tersedia.");
         setShowAlert(true);
-        setIsLoading(false);
         return;
       }
+      console.log("ReportData", data);
+      setReportData(data);
 
-      // Jika data ada, set data dan generate PDF
-      setTransactionReport(dataChart.transactions_report);
-      setProductSellsReport(dataChart.product_sells_report);
+      // tetap kirim ke PDF generator (jika masih dipakai)
+      // const pdf = await generatePDFReport(
+      //   "",
+      //   "",
+      //   "",
+      //   chartRef,
+      //   type === "daily",
+      // );
 
-      const data = await generatePDFReport(dayInput, monthInput, yearInput, chartRef, isDayReportProp);
-      setPdfDoc(data);
+      // setPdfDoc(pdf);
 
       setIsChartWidth(true);
       setShowDownloadAlert(true);
-      setAlertMessage(`Silakan unduh laporan dengan klik tombol di bawah.`);
-    } catch (error) {
-      console.error("Gagal generate PDF:", error);
+      setAlertMessage("Silakan download laporan.");
+    } catch (err) {
+      console.error(err);
+      setAlertMessage("Gagal mengambil laporan");
+      setShowAlert(true);
     } finally {
       setIsLoading(false);
     }
@@ -129,8 +141,9 @@ const ReportPage: React.FC = () => {
   // ======================
   const downloadPDF = () => {
     if (pdfDoc) {
-
-      pdfDoc.doc.save(`laporan_basreng_pos ${pdfDoc.startDate} - ${pdfDoc.endDate}.pdf`);
+      pdfDoc.doc.save(
+        `laporan_basreng_pos ${pdfDoc.startDate} - ${pdfDoc.endDate}.pdf`,
+      );
       // refreshPage()
     }
   };
@@ -148,10 +161,16 @@ const ReportPage: React.FC = () => {
   // ======================
   // Handler Filter
   // ======================
-  const handleGenerateLast30Days = () => handleGenerate('30');
-  const handleGenerateLast7Days = () => handleGenerate('7');
-  const handleGenerateMonthly = () => handleGenerate('', selectedMonth, selectedYear);
-  const handleGenerateDaily = () => handleGenerate(selectedDate, '', '', true);
+  const handleGenerateDaily = () => handleGenerate("daily");
+
+  const handleGenerateLast7Days = () => handleGenerate("range", "7");
+
+  const handleGenerateLast30Days = () => handleGenerate("range", "30");
+
+  const handleGenerateMonthly = () => {
+    if (!selectedYear || !selectedMonth) return;
+    handleGenerate("monthly", `${selectedYear}-${selectedMonth}`);
+  };
 
   // ======================
   // Render
@@ -283,16 +302,17 @@ const ReportPage: React.FC = () => {
         {/* Chart Preview */}
         <ChartRenderer
           ref={chartRef}
-          transactionsReport={transactionReport}
-          productSellsReport={productSellsReport}
+          chartData={reportData?.chart}
+          summary={reportData?.summary}
+          branches={reportData?.branches}
           setWidth={isChartWidth}
-          isDayReport={isDayReport}
+          isDayReport={reportData?.type === "daily"}
         />
 
         {/* Loading Indicator */}
         <IonLoading
           isOpen={isLoading}
-          message={'Tunggu sebentar, laporan sedang dibuat...'}
+          message={"Tunggu sebentar, laporan sedang dibuat..."}
           spinner="dots"
         />
 
@@ -302,7 +322,7 @@ const ReportPage: React.FC = () => {
           onDidDismiss={() => setShowAlert(false)}
           header="Informasi"
           message={alertMessage}
-          buttons={['OK']}
+          buttons={["OK"]}
         />
 
         {/* Alert untuk download */}
@@ -313,14 +333,14 @@ const ReportPage: React.FC = () => {
           message={alertMessage}
           buttons={[
             {
-              text: 'Kembali',
-              role: 'cancel',
-              handler: () => setShowDownloadAlert(false)
+              text: "Kembali",
+              role: "cancel",
+              handler: () => setShowDownloadAlert(false),
             },
             {
-              text: 'Download',
-              handler: downloadPDF
-            }
+              text: "Download",
+              handler: downloadPDF,
+            },
           ]}
         />
       </IonContent>

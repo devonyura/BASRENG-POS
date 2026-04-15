@@ -19,6 +19,14 @@ export function rupiahFormat(value: string | number | null | undefined, withRp: 
     : number.toLocaleString("id-ID");
 }
 
+export const rupiahFormatBarChart = (number: number) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(number);
+};
+
 export function parseWeightGrams(quantity?: string | number | null) {
   if (quantity === null || quantity === undefined || quantity === '') {
     return null;

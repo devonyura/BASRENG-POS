@@ -4,5 +4,37 @@
 
 .struk-logo {
   padding: 0;
-  height: 180px;
+  height: 150px;
+  width: 150px;
+  margin: auto;
+}
+
+ion-segment-button::part(indicator-background) {
+  background: #a30808;
+}
+
+/* Material Design styles */
+ion-segment-button.md::part(native) {
+  color: #000;
+}
+
+.segment-button-checked.md::part(native) {
+  color: #a30808;
+}
+
+ion-segment-button.md::part(indicator-background) {
+  height: 4px;
+}
+
+/* iOS styles */
+ion-segment-button.ios::part(native) {
+  color: #a30808;
+}
+
+.segment-button-checked.ios::part(native) {
+  color: #fff;
+}
+
+ion-segment-button.ios::part(indicator-background) {
+  border-radius: 20px;
 }

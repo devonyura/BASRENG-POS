@@ -54,6 +54,7 @@ import ShopeeOrderSection from "../../components/checkout/ShopeeOrderSection";
 import CashPaymentSection from "../../components/checkout/CashPaymentSection";
 import PaymentMethodSection from "../../components/checkout/PaymentMethodSection";
 import CheckoutButton from "../../components/checkout/CheckoutButton";
+import TransactionHistoryDetail from "./TransactionHistoryDetail";
 
 const DetailOrder: React.FC = () => {
   // untuk reset Cart
@@ -438,6 +439,9 @@ const DetailOrder: React.FC = () => {
     };
   }, [paymentProof]);
 
+  // ============== untuk open TransactionHistoryDetail
+  const [openReceiptDetail, setOpenReceiptDetail] = useState(false);
+
   return (
     <>
       <IonFab vertical="bottom" horizontal="end" slot="fixed" color="danger">
@@ -643,7 +647,7 @@ const DetailOrder: React.FC = () => {
         isOpen={showSuccessAlert}
         onDidDismiss={() => {}}
         header="Transaksi Berhasil!"
-        message={"Transaksi berhasil dicatat."}
+        message={"Transaksi berhasil dicatat. Cetak / Lihat struk sekarang?"}
         buttons={[
           {
             text: "Kembali",
@@ -652,8 +656,24 @@ const DetailOrder: React.FC = () => {
               resetInput();
             },
           },
+          {
+            text: "Cetak Struk",
+            handler: () => {
+              setOpenReceiptDetail(true);
+            },
+          },
         ]}
       />
+      {showSuccessAlert && (
+        <TransactionHistoryDetail
+          transactionCode={transactionCode}
+          isOpen={openReceiptDetail}
+          onDidDismiss={() => {
+            setOpenReceiptDetail(false);
+            resetInput();
+          }}
+        />
+      )}
       <IonAlert
         isOpen={alertBeforeSubmit}
         onDidDismiss={() => {}}

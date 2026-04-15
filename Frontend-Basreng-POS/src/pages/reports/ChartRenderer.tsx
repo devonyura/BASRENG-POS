@@ -10,152 +10,157 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid,
-  Legend
+  Legend,
 } from "recharts";
 import "./ChartRenderer.css";
-import { TransactionsReport, ProductSellsReport } from '../../hooks/interfaces';
-import { rupiahFormat } from "../../hooks/formatting";
+import { rupiahFormat, rupiahFormatBarChart } from "../../hooks/formatting";
 
-// Warna untuk chart (Bar dan Pie)
 const COLORS = [
-  "#0088FE", "#00C49F", "#FFBB28", "#FF8042",
-  "#A28CFF", "#FF6B6B", "#4D96FF", "#00B8A9",
-  "#FF8C42", "#5E60CE", "#6930C3", "#7400B8",
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#A28CFF",
+  "#FF6B6B",
+  "#4D96FF",
+  "#00B8A9",
+  "#FF8C42",
+  "#5E60CE",
+  "#6930C3",
+  "#7400B8",
   "#3F37C9",
 ];
 
 interface ChartRendererProps {
-  transactionsReport?: TransactionsReport | null | undefined;
-  productSellsReport?: ProductSellsReport[] | null;
+  chartData?: {
+    labels: string[];
+    datasets: Record<string, any>;
+  };
+  summary?: any;
+  branches?: any[];
   setWidth: boolean;
   isDayReport: boolean;
 }
 
-// Komponen utama ChartRenderer
-export const ChartRenderer = React.forwardRef<HTMLDivElement, ChartRendererProps>(
-  ({ transactionsReport, productSellsReport, setWidth, isDayReport }, ref) => {
-
-    // Jika sedang menggunakan laporan harian, komponen tidak menampilkan grafik
-    if (isDayReport) {
-      return null;
-    }
-
-    // Jika laporan transaksi tidak tersedia atau kosong
-    if (!transactionsReport || Object.keys(transactionsReport).length === 0) {
-      return <div>Laporan Belum dibuat.</div>;
-    }
-
-    // Mengambil daftar nama cabang dari laporan transaksi
-    const branchNames: string[] = Object.keys(transactionsReport);
-
-    /**
-     * Persiapan data untuk BarChart
-     * - Looping berdasarkan indeks data pada cabang pertama
-     * - Ambil tanggal dari data cabang pertama
-     * - Format tanggal agar hanya menampilkan hari dan tanggal (tanpa tahun)
-     * - Bangun baris data dengan key sesuai nama cabang
-     */
-    const barChartData = branchNames.length > 0
-      ? transactionsReport[branchNames[0]].map((_, idx) => {
-        const rawDate = transactionsReport[branchNames[0]][idx].date;
-        const [dayPart, datePart] = rawDate.split(', ');
-        const dateWithoutYear = datePart.split(' ').slice(0, 2).join(' ');
-        const date = `${dayPart}, ${dateWithoutYear}`;
-
-        const row: Record<string, number | string> = { date };
-        branchNames.forEach(branch => {
-          const sales = Number(transactionsReport[branch][idx]?.total_sales || 0);
-          row[branch] = sales;
-        });
-        return row;
-      })
-      : [];
-
-    // Data untuk PieChart (6 produk terlaris)
-    const pieChartData = productSellsReport
-      ? productSellsReport.slice(0, 6).map(product => ({
-        name: product.product_name,
-        value: Number(product.total_sold)
-      }))
-      : [];
-
-    // Tanggal awal dan akhir laporan (dari cabang pertama)
-    const branch = branchNames[0];
-    const transactions = transactionsReport[branch];
-    const startDate = transactions?.[0]?.date || "";
-    let endDate = transactions?.[transactions.length - 1]?.date || "";
-    endDate = (endDate === startDate ? '' : endDate);
-
-    return (
-      <div ref={ref} className="chart-container" style={setWidth ? { width: '100%' } : {}}>
-        {/* Judul utama chart */}
-        <h2 className="chart-header">
-          📊 Grafik Laporan {endDate !== '' ? 'dari' : ''} {startDate} {endDate !== '' && `- ${endDate}`}
-        </h2>
-
-        {/* Bar Chart */}
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart
-            data={barChartData}
-            margin={{ top: 20, right: 30, left: 50, bottom: 60 }}
-          >
-            <Legend
-              verticalAlign="top"
-              align="center"
-              wrapperStyle={{ paddingBottom: '10px' }}
-            />
-            <XAxis dataKey="date" angle={-50} textAnchor="end" />
-            <YAxis tickFormatter={(value) => rupiahFormat(value)} />
-            <Tooltip />
-            {branchNames.map((branch, index) => (
-              <Bar
-                key={branch}
-                dataKey={branch}
-                fill={COLORS[index % COLORS.length]}
-                name={branch}
-              />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
-
-        {/* Subjudul Pie Chart */}
-        <h3 className="chart-subheader">
-          6 Produk Terlaris {endDate !== '' ? 'dari' : ''} {startDate} {endDate !== '' && `- ${endDate}`}
-        </h3>
-
-        {/* Pie Chart */}
-        <div style={{ width: "100%", height: 400 }}>
-          <ResponsiveContainer>
-            <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
-              <Legend
-                verticalAlign="top"
-                align="center"
-                wrapperStyle={{ paddingBottom: '130px' }}
-              />
-              <Pie
-                data={pieChartData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label
-              >
-                {pieChartData.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    );
+export const ChartRenderer = React.forwardRef<
+  HTMLDivElement,
+  ChartRendererProps
+>(({ chartData, summary, branches, setWidth, isDayReport }, ref) => {
+  if (!chartData) {
+    return <div>Laporan belum dibuat.</div>;
   }
-);
+
+  const { labels, datasets } = chartData;
+
+  // ======================
+  // NORMALIZE BAR CHART
+  // ======================
+  const branchNames = Object.keys(datasets);
+
+  const barChartData = labels.map((label, idx) => {
+    const row: Record<string, any> = { label };
+
+    branchNames.forEach((branch) => {
+      const data = datasets[branch];
+
+      if (Array.isArray(data)) {
+        // daily (array)
+        row[branch] = Number(data[idx] || 0);
+      } else {
+        // range / monthly (object)
+        row[branch] = Number(data[label] || 0);
+      }
+    });
+
+    return row;
+  });
+
+  // ======================
+  // PIE CHART (payment summary)
+  // ======================
+  const pieChartData = summary
+    ? Object.entries(summary.payment_summary).map(([key, value]) => ({
+        name: key.toUpperCase(),
+        value: Number(value),
+      }))
+    : [];
+
+  return (
+    <div
+      ref={ref}
+      className="chart-container"
+      style={setWidth ? { width: "100%" } : {}}
+    >
+      {/* HEADER */}
+      <h2 className="chart-header">
+        📊 Grafik Laporan ({labels[0]}{" "}
+        {labels.length > 1 && `- ${labels[labels.length - 1]}`})
+      </h2>
+
+      {/* BAR CHART */}
+      <ResponsiveContainer width="100%" height={400}>
+        <BarChart
+          data={barChartData}
+          margin={{ top: 20, right: 30, left: 50, bottom: 60 }}
+        >
+          <Legend verticalAlign="top" align="center" />
+          <XAxis
+            dataKey="label"
+            angle={-45}
+            textAnchor="end"
+            tickFormatter={(value) => value.slice(5)} // contoh: 2026-04-16 → 04-16
+          />
+          <YAxis
+            domain={[0, "dataMax"]}
+            allowDecimals={false}
+            tickFormatter={(v) => rupiahFormatBarChart(Number(v))}
+          />
+          <Tooltip
+            formatter={(value: any) => rupiahFormatBarChart(Number(value))}
+          />
+
+          {branchNames.map((branch, index) => (
+            <Bar
+              key={branch}
+              dataKey={branch}
+              fill={COLORS[index % COLORS.length]}
+              name={branch}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+
+      {/* PIE CHART */}
+      <h3 className="chart-subheader">Komposisi Metode Pembayaran</h3>
+
+      <div style={{ width: "100%", height: 400 }}>
+        <ResponsiveContainer width="100%" height={400}>
+          <PieChart>
+            <Tooltip formatter={(value: any) => rupiahFormat(Number(value))} />
+            <Legend verticalAlign="top" align="center" />
+            <Pie
+              data={pieChartData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              label={({ name, value }) =>
+                `${name}: ${rupiahFormat(Number(value))}`
+              }
+            >
+              {pieChartData.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={COLORS[index % COLORS.length]}
+                />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+});
 
 ChartRenderer.displayName = "ChartRenderer";

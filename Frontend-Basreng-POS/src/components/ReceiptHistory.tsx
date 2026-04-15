@@ -148,16 +148,6 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
               </React.Fragment>
             ))}
 
-            {is_reseller && (
-              <tr>
-                <td className="tr-title" colSpan={3}>
-                  Potongan Reseller
-                </td>
-                <td className="tr-title">
-                  -{rupiahFormat(Number(discount), false)}
-                </td>
-              </tr>
-            )}
             <tr>
               <td className="tr-title" colSpan={3}>
                 Pembayaran
