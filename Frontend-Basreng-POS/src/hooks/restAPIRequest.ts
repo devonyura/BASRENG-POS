@@ -1,9 +1,10 @@
 import React from "react";
 import Cookies from "js-cookie";
-// export const BASE_API_URL = "https://restapi.basrenghosting.biz.id"
-export const BASE_API_URL = "http://localhost:8080"
+
+export const BASE_API_URL = import.meta.env.VITE_BASE_API_URL;
+
 export const FILE_BASE_URL =
-	`${BASE_API_URL}/uploads/products`;
+	`${BASE_API_URL}${import.meta.env.VITE_FILE_BASE_PATH || '/uploads/products'}`;
 
 export interface ApiResponse {
 	success: boolean;
@@ -145,48 +146,6 @@ export const checkOKResponse = (response: any) => {
 	}
 }
 
-
-// export const getAllData = async (setStudens: React.Dispatch<React.SetStateAction<Student[]>>) => {
-// 	try {
-// 		// Ambil token JWT dari localStorage
-// 		const TOKEN = Cookies.get("token");
-
-// 		// Cek apakah API online
-// 		const apiOnline = await isApiOnline();
-// 		console.log(apiOnline);
-// 		if (!apiOnline) {
-// 			return "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
-// 		}
-
-// 		// Konfigurasi request dengan header Authorization
-// 		const response = await fetch(`${BASE_API_URL}/api/siswa`, {
-// 			method: "GET",
-// 			credentials: "include",
-// 			headers: {
-// 				"Content-Type": "application/json",
-// 				"Authorization": `Bearer ${TOKEN}`,
-// 			},
-// 		});
-
-// 		// Check Response
-// 		checkOKResponse(response);
-
-// 		// Ubah data ke json format
-// 		const data = await response.json();
-
-// 		console.info("Status Request getAllData() : ", data.status);
-
-// 		// set State student
-// 		setStudens(data.data);
-
-// 	} catch (error) {
-// 		// Kirim error jika gagal request
-// 		console.error("Error Fetching Students", error);
-// 		return error;
-// 	}
-// };
-
-// setProducts: React.Dispatch<React.SetStateAction<DataProduct[]> | null>
 export const getDataProducts = async () => {
 	try {
 		// Ambil token JWT dari localStorage
