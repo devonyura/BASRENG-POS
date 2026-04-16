@@ -29,7 +29,6 @@ import {
   SubCategory,
 } from "../../hooks/restAPISubCategories";
 // import CategoryForm from './CategoryForm'; // Kita buat setelah ini
-import { AlertMessageProps } from "../products/ProductForm";
 import CategoryAlertForm from "./CategoryAlertForm";
 import SubCategoryAlertForm from "./SubCategoryAlertForm";
 
@@ -56,7 +55,7 @@ const CategoryListPage: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({
+  const [alertMessage, setAlertMessage] = useState({
     title: "",
     message: "",
   });
@@ -74,7 +73,7 @@ const CategoryListPage: React.FC = () => {
       setCategories(data);
 
       // Ambil data semua sub-category
-      data.forEach((cat) => fetchSubCategories(cat.id));
+      data.forEach((cat) => fetchSubCategories(String(cat.id)));
     } catch (err) {
       console.error("Gagal mengambil data kategori:", err);
     } finally {
@@ -85,7 +84,7 @@ const CategoryListPage: React.FC = () => {
   const fetchSubCategories = async (categoryId: string) => {
     try {
       setLoadingSub((prev) => ({ ...prev, [categoryId]: true }));
-      const data = await getSubCategoriesbyCategory(categoryId);
+      const data = await getSubCategoriesbyCategory(Number(categoryId));
 
       // Pastikan data array
       if (Array.isArray(data)) {
@@ -237,14 +236,14 @@ const CategoryListPage: React.FC = () => {
           <IonAccordionGroup>
             <IonList>
               {categories.map((category) => (
-                <IonAccordion key={category.id} value={category.id}>
+                <IonAccordion key={category.id} value={String(category.id)}>
                   {/* HEADER */}
                   <IonItem slot="header" color="light">
                     <IonLabel>
                       <h2>
                         {category.name}{" "}
                         <span style={{ fontSize: "0.9em", color: "gray" }}>
-                          ({subCategories[category.id]?.length || 0})
+                          ({subCategories ? [category.id]?.length : 0})
                         </span>
                       </h2>
                     </IonLabel>
@@ -266,7 +265,7 @@ const CategoryListPage: React.FC = () => {
                       slot="end"
                       onClick={(e) => {
                         e.stopPropagation(); // penting
-                        confirmDelete(category.id);
+                        confirmDelete(String(category.id));
                       }}
                     >
                       <IonIcon icon={trashBin} />
@@ -275,22 +274,24 @@ const CategoryListPage: React.FC = () => {
 
                   {/* CONTENT */}
                   <div slot="content">
-                    {loadingSub[category.id] ? (
+                    {loadingSub[category.id ?? 0] ? (
                       <IonItem>
                         <IonSpinner name="dots" />
                       </IonItem>
                     ) : (
                       <>
-                        {Array.isArray(subCategories[category.id]) &&
-                        subCategories[category.id].length > 0 ? (
-                          subCategories[category.id].map((sub) => (
+                        {Array.isArray(subCategories[category.id ?? 0]) &&
+                        subCategories[category.id ?? 0].length > 0 ? (
+                          subCategories[category.id ?? 0].map((sub) => (
                             <IonItem key={sub.id}>
                               <IonLabel>{sub.name}</IonLabel>
 
                               <IonButton
                                 fill="clear"
                                 slot="end"
-                                onClick={() => handleEditSub(sub, category.id)}
+                                onClick={() =>
+                                  handleEditSub(sub, String(category.id))
+                                }
                               >
                                 <IonIcon icon={pencil} />
                               </IonButton>
@@ -300,7 +301,7 @@ const CategoryListPage: React.FC = () => {
                                 color="danger"
                                 slot="end"
                                 onClick={() =>
-                                  confirmSubDelete(sub.id, category.id)
+                                  confirmSubDelete(sub.id, String(category.id))
                                 }
                               >
                                 <IonIcon icon={trashBin} />
@@ -321,7 +322,7 @@ const CategoryListPage: React.FC = () => {
                       <IonButton
                         expand="block"
                         fill="outline"
-                        onClick={() => handleAddSub(category.id)}
+                        onClick={() => handleAddSub(String(category.id))}
                       >
                         <IonIcon icon={add} slot="start" />
                         Tambah Sub Kategori
@@ -340,7 +341,7 @@ const CategoryListPage: React.FC = () => {
           onSuccess={() => {
             handleSuccess();
           }}
-          initialCategory={editingCategory}
+          initialCategory={editingCategory ?? undefined}
         />
 
         <SubCategoryAlertForm

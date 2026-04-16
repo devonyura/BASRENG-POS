@@ -2,8 +2,8 @@ import { BASE_API_URL, isApiOnline, checkOKResponse, ApiResponse } from "./restA
 import Cookies from "js-cookie";
 
 export interface Category {
-  id: string|number;
-  name: string;
+  id: number | null;
+  name: string | null;
 }
 
 export interface CategoriesPayload {
@@ -93,7 +93,7 @@ export const createCategories = async (categoriesPayload: CategoriesPayload): Pr
   });
 };
 
-export const updateCategories = async (updateCategoriesPayload: CategoriesPayload, id: string|null): Promise<ApiResponse> => {
+export const updateCategories = async (updateCategoriesPayload: CategoriesPayload, id: number): Promise<ApiResponse> => {
   return new Promise(async (resolve, reject) => {
     console.log("API:", updateCategoriesPayload)
     try {

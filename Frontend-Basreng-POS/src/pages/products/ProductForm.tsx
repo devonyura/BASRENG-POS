@@ -47,7 +47,7 @@ const productSchema = z.object({
     })
     .nullable(),
 
-  descriptions: z.array(z.string()).optional().default([]),
+  descriptions: z.array(z.string()).nullable(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -158,7 +158,7 @@ const ProductForm: React.FC<Props> = ({
       };
 
       if (isEditMode && initialProduct) {
-        await updateProduct({ ...payload, id: initialProduct.id });
+        await updateProduct({ ...payload, id: Number(initialProduct.id) });
         // setProductId(initialProduct.id);
       } else {
         const res = await createProduct(payload);
@@ -193,7 +193,7 @@ const ProductForm: React.FC<Props> = ({
 
   const removeDescription = (index: number) => {
     const current = getValues("descriptions");
-    const updated = current.filter((_, i) => i !== index);
+    const updated = current?.filter((_, i) => i !== index) || null;
 
     setValue("descriptions", updated);
   };

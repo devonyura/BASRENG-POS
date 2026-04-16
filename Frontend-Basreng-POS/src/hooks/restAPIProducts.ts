@@ -3,11 +3,11 @@ import Cookies from "js-cookie";
 
 // Base field yang sama
 export interface BaseProductPayload {
-  category_id: number|null;
+  category_id: number | null;
   subcategory_id?: string | null;
   name: string;
-  price: string;
-  weight_grams: string;
+  // price: string;
+  // weight_grams: string;
   descriptions: string | null;
 }
 
@@ -18,7 +18,7 @@ export interface CreateProductPayload extends BaseProductPayload {
 
 // Untuk UPDATE
 export interface UpdateProductPayload extends BaseProductPayload {
-  id: string;
+  id: number;
   img?: File | null;
 }
 
@@ -32,7 +32,7 @@ export interface Product {
   id: string;
   name: string;
   img: string | null;
-  category_id: string;
+  category_id: number | null;
   variants: ProductVariant[];
 }
 
@@ -41,7 +41,7 @@ export interface ProductWithVariant {
   id: string;
   name: string;
   img: string | null;
-  category_id: string;
+  category_id: number | null;
   variants: ProductVariant[];
 }
 
@@ -51,12 +51,12 @@ export interface CreateProductResponse {
 }
 
 export interface ProductPayload {
-  category_id: string;
-  subcategory_id: string | null |undefined;
+  category_id: number | null;
+  subcategory_id?: string | null | undefined;
   name: string;
-  price: string;
-  weight_grams: string;
-  descriptions: string | null | undefined;
+  // price: string;
+  // weight_grams: string;
+  descriptions: string | null;
   img?: File | null;
 }
 
@@ -85,18 +85,18 @@ export const createProduct = async (
     }
   });
 
-  console.log("Product:",formData);
+  console.log("Product:", formData);
 
   const response = await fetch(`${BASE_API_URL}/api/products`, {
     method: "POST",
     credentials: "include",
     headers: {
-        Authorization: `Bearer ${TOKEN}`,
-      },
+      Authorization: `Bearer ${TOKEN}`,
+    },
     body: formData,
   });
 
-  console.log("formData:",formData)
+  console.log("formData:", formData)
   checkOKResponse(response);
 
   const data = await response.json();
@@ -213,7 +213,7 @@ export const getProducts = async (): Promise<ProductWithVariant[]> => {
 
     return data.data;
 
-  } catch (error:any) {
+  } catch (error: any) {
     console.error("Error Fetching transactions", error);
     return error;
   }

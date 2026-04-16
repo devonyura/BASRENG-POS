@@ -62,9 +62,11 @@ interface LocationState {
 }
 
 export interface Summary {
-  total_sales?: number;
-  total_transactions?: number;
-  payment_summary?: {
+  total_sales: number;
+  bulan_ini: number;
+  total_transactions: number;
+  minggu_ini: number;
+  payment_summary: {
     cash?: number;
     transfer_bank: number;
     qris: number;

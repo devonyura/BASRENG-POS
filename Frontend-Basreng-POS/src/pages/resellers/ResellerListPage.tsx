@@ -1,13 +1,27 @@
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonButton, IonIcon, IonItem, IonLabel, IonList,
-  IonButtons, IonBackButton, IonSpinner, IonAlert
-} from '@ionic/react';
-import { pencil, trashBin } from 'ionicons/icons';
-import { useEffect, useState } from 'react';
-import { getResellers, deleteReseller, Reseller } from '../../hooks/restAPIResellers';
-import { AlertMessageProps } from '../products/ProductForm';
-import ResellerForm from './ResellerForm';
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButton,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonButtons,
+  IonBackButton,
+  IonSpinner,
+  IonAlert,
+} from "@ionic/react";
+import { pencil, trashBin } from "ionicons/icons";
+import { useEffect, useState } from "react";
+import {
+  getResellers,
+  deleteReseller,
+  Reseller,
+} from "../../hooks/restAPIResellers";
+import ResellerForm from "./ResellerForm";
 
 const ResellerListPage: React.FC = () => {
   const [resellers, setResellers] = useState<Reseller[]>([]);
@@ -16,10 +30,10 @@ const ResellerListPage: React.FC = () => {
   const [editingReseller, setEditingReseller] = useState<Reseller | null>(null);
 
   const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({ title: '', message: '' });
+  const [alertMessage, setAlertMessage] = useState({ title: "", message: "" });
 
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [selectedResellerId, setSelectedResellerId] = useState('');
+  const [selectedResellerId, setSelectedResellerId] = useState("");
 
   useEffect(() => {
     fetchResellers();
@@ -47,11 +61,14 @@ const ResellerListPage: React.FC = () => {
   };
 
   const handleSuccess = () => {
-    const info = editingReseller ? 'Diubah' : 'Ditambah';
+    const info = editingReseller ? "Diubah" : "Ditambah";
     setShowResellerForm(false);
     setEditingReseller(null);
     fetchResellers();
-    setAlertMessage({ title: 'Berhasil', message: `Reseller Berhasil ${info}!` });
+    setAlertMessage({
+      title: "Berhasil",
+      message: `Reseller Berhasil ${info}!`,
+    });
     setShowAlert(true);
   };
 
@@ -63,11 +80,17 @@ const ResellerListPage: React.FC = () => {
   const executeDelete = async () => {
     try {
       await deleteReseller(selectedResellerId);
-      setAlertMessage({ title: 'Berhasil', message: 'Reseller Berhasil Dihapus!' });
+      setAlertMessage({
+        title: "Berhasil",
+        message: "Reseller Berhasil Dihapus!",
+      });
       fetchResellers();
     } catch (error) {
       console.error("Gagal menghapus reseller:", error);
-      setAlertMessage({ title: 'Gagal', message: `Gagal menghapus reseller: ${error}` });
+      setAlertMessage({
+        title: "Gagal",
+        message: `Gagal menghapus reseller: ${error}`,
+      });
     } finally {
       setShowAlert(true);
       setShowConfirmDelete(false);
@@ -87,13 +110,15 @@ const ResellerListPage: React.FC = () => {
       </IonHeader>
 
       <IonContent className="ion-padding">
-        <IonButton expand="block" onClick={handleAdd}>Tambah Reseller</IonButton>
+        <IonButton expand="block" onClick={handleAdd}>
+          Tambah Reseller
+        </IonButton>
 
         {loading ? (
-          <IonSpinner name="crescent" className='ion-spin-list' />
+          <IonSpinner name="crescent" className="ion-spin-list" />
         ) : (
           <IonList>
-            {resellers.map(reseller => (
+            {resellers.map((reseller) => (
               <div key={reseller.id}>
                 <IonItem color="light">
                   <IonLabel>
@@ -101,10 +126,19 @@ const ResellerListPage: React.FC = () => {
                     {reseller.phone && <p>HP: {reseller.phone}</p>}
                     {reseller.address && <p>Alamat: {reseller.address}</p>}
                   </IonLabel>
-                  <IonButton fill="clear" slot="end" onClick={() => handleEdit(reseller)}>
+                  <IonButton
+                    fill="clear"
+                    slot="end"
+                    onClick={() => handleEdit(reseller)}
+                  >
                     <IonIcon icon={pencil} />
                   </IonButton>
-                  <IonButton fill="clear" color="danger" slot="end" onClick={() => confirmDelete(reseller.id)}>
+                  <IonButton
+                    fill="clear"
+                    color="danger"
+                    slot="end"
+                    onClick={() => confirmDelete(reseller.id)}
+                  >
                     <IonIcon icon={trashBin} />
                   </IonButton>
                 </IonItem>
@@ -125,7 +159,7 @@ const ResellerListPage: React.FC = () => {
           onDidDismiss={() => setShowAlert(false)}
           header={alertMessage.title}
           message={alertMessage.message}
-          buttons={['OK']}
+          buttons={["OK"]}
         />
 
         <IonAlert
@@ -136,12 +170,12 @@ const ResellerListPage: React.FC = () => {
             {
               text: "Tidak",
               role: "cancel",
-              handler: () => setShowConfirmDelete(false)
+              handler: () => setShowConfirmDelete(false),
             },
             {
               text: "Ya",
-              handler: executeDelete
-            }
+              handler: executeDelete,
+            },
           ]}
           onDidDismiss={() => setShowConfirmDelete(false)}
         />

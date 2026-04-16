@@ -3,7 +3,7 @@ import React from "react";
 import { IonCard, IonCardContent, IonButton, IonText } from "@ionic/react";
 
 import { rupiahFormat, formatWeight } from "../hooks/formatting";
-import { DataProduct } from "../hooks/restAPIRequest";
+import { DataProduct, BASE_API_URL } from "../hooks/restAPIRequest";
 
 // Redux
 import { useDispatch, useSelector } from "react-redux";
@@ -94,7 +94,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     <IonCard className="product-card">
       {/* IMAGE */}
       <img
-        src={`http://localhost:8080/uploads/products/${product.img}`}
+        src={`${BASE_API_URL}/uploads/products/${product.img}`}
         className="product-img"
       />
 

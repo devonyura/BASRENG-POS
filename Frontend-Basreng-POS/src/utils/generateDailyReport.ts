@@ -26,7 +26,7 @@ export const generateDailyReport = ({
   products,
   date,
 }: {
-  summary: Summary;
+  summary: Summary | undefined;
   branches: BranchIncome[];
   products: Product[];
   date: string;
@@ -52,10 +52,10 @@ export const generateDailyReport = ({
 
   doc.setFontSize(10);
 
-  doc.text(`Total Omset        : ${rupiahFormat(summary.total_sales)}`, 14, y);
+  doc.text(`Total Omset        : ${rupiahFormat(summary?.total_sales)}`, 14, y);
   y += 5;
   doc.text(
-    `Total Transaksi    : ${summary.total_transactions}`,
+    `Total Transaksi    : ${summary?.total_transactions}`,
     14,
     y
   );

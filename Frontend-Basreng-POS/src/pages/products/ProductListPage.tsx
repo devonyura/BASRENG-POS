@@ -40,8 +40,8 @@ const ProductListPage: React.FC = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<
-    string | number | undefined
-  >(undefined);
+    string | number | null
+  >(null);
 
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({
@@ -97,7 +97,7 @@ const ProductListPage: React.FC = () => {
   const handleSuccess = () => {
     // const info = editingProduct ? "Diubah" : "Ditambah";
     setShowModal(false);
-    setSelectedCategoryId(undefined);
+    setSelectedCategoryId(null);
     fetchProducts();
     setAlertMessage({ title: "Berhasil", message: `Proses Berhasil!` });
     setShowAlert(true);
@@ -225,7 +225,7 @@ const ProductListPage: React.FC = () => {
         <ProductForm
           isOpen={showForm}
           initialProduct={selectedProduct}
-          initialCategory={selectedCategoryId}
+          initialCategory={Number(selectedCategoryId)}
           onDidDismiss={() => setShowForm(false)}
           onSuccess={handleSuccess}
         />

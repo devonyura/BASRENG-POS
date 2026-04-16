@@ -71,10 +71,10 @@ const ProductVariantSection: React.FC<Props> = ({ productId }) => {
       setLoadingId(variant.id);
 
       await updateVariant({
-        id: String(variant.id),
-        product_id: String(variant.product_id),
-        weight_grams: String(variant.weight_grams),
-        price: String(variant.price),
+        id: variant.id,
+        product_id: variant.product_id,
+        weight_grams: variant.weight_grams,
+        price: variant.price,
       });
     } finally {
       setLoadingId(null);
@@ -123,7 +123,7 @@ const ProductVariantSection: React.FC<Props> = ({ productId }) => {
                     value={formatRupiah(v.price)}
                     onIonChange={(e) => {
                       const raw = parseRupiah(e.detail.value || "");
-                      updateField(v.id, "price", raw);
+                      updateField(v.id, "price", String(raw));
                     }}
                   />
 

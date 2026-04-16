@@ -1,13 +1,23 @@
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonButton, IonIcon, IonItem, IonLabel, IonList,
-  IonButtons, IonBackButton, IonSpinner, IonAlert
-} from '@ionic/react';
-import { add, pencil, trashBin } from 'ionicons/icons';
-import { useEffect, useState } from 'react';
-import { getBranches, deleteBranch, Branch } from '../../hooks/restAPIBranch';
-import { AlertMessageProps } from '../products/ProductForm';
-import BranchAlertForm from './BranchAlertForm';
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButton,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonButtons,
+  IonBackButton,
+  IonSpinner,
+  IonAlert,
+} from "@ionic/react";
+import { add, pencil, trashBin } from "ionicons/icons";
+import { useEffect, useState } from "react";
+import { getBranches, deleteBranch, Branch } from "../../hooks/restAPIBranch";
+import BranchAlertForm from "./BranchAlertForm";
 
 const BranchListPage: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -16,10 +26,10 @@ const BranchListPage: React.FC = () => {
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
 
   const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({ title: '', message: '' });
+  const [alertMessage, setAlertMessage] = useState({ title: "", message: "" });
 
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [selectedBranchId, setSelectedBranchId] = useState("");
 
   useEffect(() => {
     fetchBranches();
@@ -47,11 +57,11 @@ const BranchListPage: React.FC = () => {
   };
 
   const handleSuccess = () => {
-    const info = editingBranch ? 'Diubah' : 'Ditambah';
+    const info = editingBranch ? "Diubah" : "Ditambah";
     setShowBranchForm(false);
     setEditingBranch(null);
     fetchBranches();
-    setAlertMessage({ title: 'Berhasil', message: `Cabang Berhasil ${info}!` });
+    setAlertMessage({ title: "Berhasil", message: `Cabang Berhasil ${info}!` });
     setShowAlert(true);
   };
 
@@ -63,11 +73,17 @@ const BranchListPage: React.FC = () => {
   const executeDelete = async () => {
     try {
       await deleteBranch(selectedBranchId);
-      setAlertMessage({ title: 'Berhasil', message: 'Cabang Berhasil Dihapus!' });
+      setAlertMessage({
+        title: "Berhasil",
+        message: "Cabang Berhasil Dihapus!",
+      });
       fetchBranches();
     } catch (error) {
       console.error("Gagal menghapus cabang:", error);
-      setAlertMessage({ title: 'Gagal', message: `Gagal menghapus cabang: ${error}` });
+      setAlertMessage({
+        title: "Gagal",
+        message: `Gagal menghapus cabang: ${error}`,
+      });
     } finally {
       setShowAlert(true);
       setShowConfirmDelete(false);
@@ -87,22 +103,33 @@ const BranchListPage: React.FC = () => {
       </IonHeader>
 
       <IonContent className="ion-padding">
-        <IonButton expand="block" onClick={handleAdd}>Tambah Cabang</IonButton>
+        <IonButton expand="block" onClick={handleAdd}>
+          Tambah Cabang
+        </IonButton>
 
         {loading ? (
-          <IonSpinner name="crescent" className='ion-spin-list' />
+          <IonSpinner name="crescent" className="ion-spin-list" />
         ) : (
           <IonList>
-            {branches.map(branch => (
+            {branches.map((branch) => (
               <div key={branch.branch_id}>
                 <IonItem color="light">
                   <IonLabel>
                     <h2>{branch.branch_name}</h2>
                   </IonLabel>
-                  <IonButton fill="clear" slot="end" onClick={() => handleEdit(branch)}>
+                  <IonButton
+                    fill="clear"
+                    slot="end"
+                    onClick={() => handleEdit(branch)}
+                  >
                     <IonIcon icon={pencil} />
                   </IonButton>
-                  <IonButton fill="clear" color="danger" slot="end" onClick={() => confirmDelete(branch.branch_id)}>
+                  <IonButton
+                    fill="clear"
+                    color="danger"
+                    slot="end"
+                    onClick={() => confirmDelete(branch.branch_id)}
+                  >
                     <IonIcon icon={trashBin} />
                   </IonButton>
                 </IonItem>
@@ -123,7 +150,7 @@ const BranchListPage: React.FC = () => {
           onDidDismiss={() => setShowAlert(false)}
           header={alertMessage.title}
           message={alertMessage.message}
-          buttons={['OK']}
+          buttons={["OK"]}
         />
 
         <IonAlert
@@ -134,12 +161,12 @@ const BranchListPage: React.FC = () => {
             {
               text: "Tidak",
               role: "cancel",
-              handler: () => setShowConfirmDelete(false)
+              handler: () => setShowConfirmDelete(false),
             },
             {
               text: "Ya",
-              handler: executeDelete
-            }
+              handler: executeDelete,
+            },
           ]}
           onDidDismiss={() => setShowConfirmDelete(false)}
         />

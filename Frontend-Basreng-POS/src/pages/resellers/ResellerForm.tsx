@@ -22,7 +22,7 @@ import {
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertMessageProps } from "../products/ProductForm";
+import AlertMessageProps from "../products/ProductForm";
 
 interface ResellerFormProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ const ResellerForm: React.FC<ResellerFormProps> = ({
   initialReseller,
 }) => {
   const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<AlertMessageProps>({
+  const [alertMessage, setAlertMessage] = useState({
     title: "",
     message: "",
   });
