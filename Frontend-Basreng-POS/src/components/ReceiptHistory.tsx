@@ -51,6 +51,8 @@ interface ReceiptHistoryProps {
   shopeeCode: string | null | undefined;
   paymentMethod: string | null | undefined;
   date?: string;
+  branch_name: string;
+  branch_address: string;
 }
 
 export interface BranchData {
@@ -76,24 +78,26 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
       shopeeCode,
       paymentMethod,
       date,
+      branch_name,
+      branch_address,
     } = props;
 
-    const [branchData, setBranchData] = useState<BranchData | null>(null);
+    // const [branchData, setBranchData] = useState<BranchData | null>(null);
 
-    useEffect(() => {
-      const fetchBranch = async () => {
-        if (!props.branch_id) return;
+    // useEffect(() => {
+    //   const fetchBranch = async () => {
+    //     if (!props.branch_id) return;
 
-        try {
-          const res = await getBranch(Number(props.branch_id));
-          setBranchData(res.data);
-        } catch (err) {
-          console.error("Gagal ambil Branch:", err);
-        }
-      };
+    //     try {
+    //       const res = await getBranch(Number(props.branch_id));
+    //       setBranchData(res.data);
+    //     } catch (err) {
+    //       console.error("Gagal ambil Branch:", err);
+    //     }
+    //   };
 
-      fetchBranch();
-    }, [props.branch_id]);
+    //   fetchBranch();
+    // }, [props.branch_id]);
 
     return (
       <div className="receipt-container" ref={ref}>
@@ -101,15 +105,11 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
         <table className="receipt">
           <thead>
             <tr className="receipt-title">
-              <th colSpan={4}>
-                - BASRENG GHOSTING {branchData?.branch_name} -
-              </th>
+              <th colSpan={4}>- BASRENG GHOSTING {branch_name} -</th>
             </tr>
             <tr className="receipt-title">
               <th colSpan={4}>
-                {branchData?.branch_address
-                  ? `- ${branchData.branch_address} -`
-                  : "- Jalan ? -"}
+                {branch_address ? `- ${branch_address} -` : "- Jalan ? -"}
               </th>
             </tr>
             <tr>
@@ -220,7 +220,7 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
               <td colSpan={3}>
                 Tgl. {date ?? new Date().toLocaleDateString("id-ID")}
               </td>
-              <td>Cabang: {branchData?.branch_name}</td>
+              <td>Cabang: {branch_name}</td>
             </tr>
             <tr>
               <td colSpan={4} className="info">

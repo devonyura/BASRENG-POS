@@ -259,8 +259,9 @@ class TransactionsController extends ResourceController
 
       $db = \Config\Database::connect();
       $builder = $db->table('transactions');
-      $builder->select('transactions.*, users.username');
+      $builder->select('transactions.*, users.username, branch.branch_address, branch.branch_name');
       $builder->join('users', 'users.id = transactions.user_id', 'left');
+      $builder->join('branch', 'branch.branch_id = transactions.branch_id', 'left');
       $builder->where('transaction_code', $transactions_code);
       $transaction = $builder->get()->getRowArray();
 

@@ -59,6 +59,8 @@ export interface Transaction {
   reseller_id: number | null;
   transaction_type: string | null;
   shopee_code: string | null | undefined;
+  branch_name: string;
+  branch_address: string;
 }
 
 export interface TransactionHistoryData {
@@ -119,7 +121,7 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
       (async () => {
         try {
           const data = await findTransactionHistory(transactionCode);
-          // console.log(data);
+          console.info("TransactionData:", data);
           setTransactionData(data);
         } catch (error) {
           console.error("Gagal Ambil Detail Transaksi", error);
@@ -223,6 +225,8 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
               shopeeCode={transactionData.transactions.shopee_code}
               paymentMethod={transactionData.transactions.payment_method}
               date={transactionData.transactions.date_time}
+              branch_name={transactionData.transactions.branch_name}
+              branch_address={transactionData.transactions.branch_address}
             />
           )}
           {transactionData?.transactions.payment_method !== "cash" && (
