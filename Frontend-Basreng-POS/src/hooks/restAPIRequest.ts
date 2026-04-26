@@ -677,3 +677,29 @@ export const getPaymentProofByTransaction = async (
 		}
 	})
 }
+
+export const generateReceiptImage = async (payload: any) => {
+	try {
+		const res = await fetch(
+			"https://receipt-service-production-1a48.up.railway.app/api/generate-receipt",
+			// "http://localhost:3000/api/generate-receipt",
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(payload)
+			}
+		)
+
+		const result = await res.json()
+
+		if (!result.success) {
+			throw new Error("Gagal generate image")
+		}
+
+		return result.data.base64;
+	} catch (err) {
+		throw err;
+	}
+}

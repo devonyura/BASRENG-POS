@@ -12,6 +12,7 @@ import {
 import { useState, useEffect, useRef } from "react";
 import {
   findTransactionHistory,
+  generateReceiptImage,
   getPaymentProofByTransaction,
 } from "../../hooks/restAPIRequest";
 import AlertInfo, { AlertState } from "../../components/AlertInfo";
@@ -19,6 +20,7 @@ import "./DetailOrder.css";
 import ReceiptHistory from "../../components/ReceiptHistory";
 
 import React from "react";
+import { document } from "ionicons/icons";
 
 interface TransactionHistoryDetailProps {
   transactionCode: string | null;
@@ -68,16 +70,12 @@ export interface TransactionHistoryData {
   transaction_details: TransactionDetailItem[];
 }
 
-// save struk
-import html2canvas from "html2canvas";
-
 const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
   transactionCode,
   isOpen = undefined,
   onDidDismiss,
 }) => {
   const modal = useRef<HTMLIonModalElement>(null);
-  const receiptRef = useRef<HTMLDivElement>(null);
   const [transactionData, setTransactionData] =
     useState<TransactionHistoryData | null>(null);
   const [shareFile, setShareFile] = useState<File | null>(null);
@@ -132,46 +130,60 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
 
   const generateImageReceipt = async () => {
     setIsSharing(true);
-
     try {
-      if (!receiptRef.current) {
-        console.error("Ref kosong");
-        setIsSharing(false);
-        return;
-      }
+      const payload = {
+        transactions: {
+          ...transactionData?.transactions,
+          storeAddress: transactionData?.transactions.branch_address,
+        },
+        transaction_details: transactionData?.transaction_details,
+      };
+      console.info(payload);
+      const base64 = await generateReceiptImage(payload);
 
-      const canvas = await html2canvas(receiptRef.current);
-      const dataUrl = canvas.toDataURL("image/png");
-      const blob = await (await fetch(dataUrl)).blob();
+      // =========================
+      // CONVERT BASE64 -> FILE
+      // =========================
+      const blob = await (await fetch(base64)).blob();
+
       const file = new File(
         [blob],
         `${transactionData?.transactions.transaction_code}.png`,
-        {
-          type: "image/png",
-        },
+        { type: "image/jpeg" },
       );
+
       setShareFile(file);
+
+      // ==================
+      // SHARE DOWNLOAD PRINT
+      // ==================
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: "Struk Pesanan",
-          text: "Berikut adalah struk pemesanan Anda.",
+          text: "Berikut adalah struk pesanan Anda.",
           files: [file],
         });
       } else {
-        // fallback download
         const url = URL.createObjectURL(file);
-        const link = document.createElement("a");
+        const link = window.document.createElement("a");
         link.href = url;
-        link.download = `${transactionData?.transactions.transaction_code}.png`;
+        link.download = file.name;
         link.click();
         URL.revokeObjectURL(url);
       }
     } catch (err) {
-      console.error("Gagal membagikan struk:", err);
-    }
+      console.error("Gagal generate receipt:", err);
 
-    setIsSharing(false);
+      setAlert({
+        showAlert: true,
+        header: "Error",
+        alertMesage: "Gagal generate struk",
+        hideButton: false,
+      });
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -190,7 +202,6 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
             <ReceiptHistory
               username={transactionData.transactions.username}
               branch_id={transactionData.transactions.branch_id}
-              ref={receiptRef}
               cash={Number(transactionData.transactions.cash_amount)}
               change={Number(transactionData.transactions.change_amount)}
               total={Number(transactionData.transactions.total_price)}
