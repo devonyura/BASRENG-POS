@@ -31,8 +31,8 @@ export default defineConfig({
 	},
 	build: {
 		rollupOptions: {
-				output: {
-					manualChunks: {
+			output: {
+				manualChunks: {
 					vendor: ['react', 'react-dom'],
 					ionic: ['@ionic/react']
 				},
@@ -65,8 +65,61 @@ export default defineConfig({
 					}
 				]
 			},
+			devOptions: {
+				enabled: false
+			},
 			workbox: {
-				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5MB
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+				runtimeCaching: [
+					// ✅ Google Fonts
+					{
+						urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'google-fonts',
+							expiration: {
+								maxEntries: 10,
+								maxAgeSeconds: 60 * 60 * 24 * 365,
+							},
+						},
+					},
+					// ✅ Gambar lokal
+					{
+						urlPattern: ({ request }) => request.destination === 'image',
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'images',
+							expiration: {
+								maxEntries: 100,
+								maxAgeSeconds: 60 * 60 * 24 * 30,
+							},
+						},
+					},
+					// 🚫 API backend — jangan cache, langsung ambil dari server
+					{
+						urlPattern: ({ url }) => url.pathname.startsWith('/api'),
+						handler: 'NetworkOnly',
+						options: {
+							cacheName: 'api-no-cache',
+						},
+					},
+					// ✅ Static file (local assets JS, CSS, dsb)
+					{
+						urlPattern: ({ url }) =>
+							url.origin === self.location.origin &&
+							!url.pathname.startsWith('/api') &&
+							!url.pathname.endsWith('.html'),
+						handler: "CacheFirst",
+						options: {
+							cacheName: 'local-assets',
+							expiration: {
+								maxEntries: 100,
+								maxAgeSeconds: 60 * 60 * 24 * 7,
+							},
+						},
+					},
+				],
+				maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
 			}
 		})
 	],

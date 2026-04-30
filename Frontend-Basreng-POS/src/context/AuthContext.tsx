@@ -6,15 +6,14 @@ export interface BranchData {
   branch_address?: string;
 }
 
-export type UserRole = "admin" | "owner" | "manager" | "kasir" | "";
-
 interface AuthContextType {
   token: string | null;
-  role: UserRole;
+  role: string | null;
   username: string | null;
   idUser: string | null;
   branchID: string | null;
   branchData: BranchData | null;
+  isAuthReady: boolean;
   login: (jwt: string) => void;
   logout: () => void;
 }
@@ -43,13 +42,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const history = useHistory();
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   const [token, setToken] = useState<string | null>(
     Cookies.get("token") || null,
   );
-  const [role, setRole] = useState<UserRole>(
-    (Cookies.get("role") as UserRole) || "",
-  );
+  const [role, setRole] = useState<string | null>(Cookies.get("role") || null);
   const [username, setUsername] = useState<string | null>(
     Cookies.get("username") || null,
   );
@@ -92,8 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (payload.data.branch_id) {
       fetchBranchData(payload.data.branch_id);
     }
-
-    history.push("/student-list");
   };
 
   const logout = () => {
@@ -105,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     Cookies.remove("branch_data");
 
     setToken(null);
-    setRole("");
+    setRole(null);
     setUsername(null);
     setIdUser(null);
     setBranchID(null);
@@ -120,6 +116,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [branchID]);
 
+  useEffect(() => {
+    const initAuth = async () => {
+      // kalau tidak ada login sama sekali
+      if (!token) {
+        setIsAuthReady(true);
+        return;
+      }
+
+      // kalau ada branch tapi belum ada data
+      if (branchID && !branchData) {
+        await fetchBranchData(branchID);
+      }
+
+      setIsAuthReady(true);
+    };
+
+    initAuth();
+  }, [token, branchID]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -129,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         idUser,
         branchID,
         branchData,
+        isAuthReady,
         login,
         logout,
       }}

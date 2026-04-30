@@ -1,4 +1,4 @@
-import { Redirect, Route } from "react-router-dom";
+import { Route } from "react-router-dom";
 import {
   IonApp,
   IonIcon,
@@ -10,15 +10,7 @@ import {
   setupIonicReact,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import {
-  images,
-  square,
-  receiptOutline,
-  list,
-  storefront,
-} from "ionicons/icons";
-import Tab2 from "./pages/Tab2";
-import Tab3 from "./pages/Tab3";
+import { receiptOutline, list, storefront } from "ionicons/icons";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -64,13 +56,10 @@ import UsersListPage from "./pages/users/UsersListPage";
 import ReportPage from "./pages/reports/ReportPage";
 import ResellerListPage from "./pages/resellers/ResellerListPage";
 import PackageListPage from "./pages/products/PackageListPage";
-import { useAuth } from "./hooks/useAuthCookie";
 
 setupIonicReact();
 
 const App: React.FC = () => {
-  const { role } = useAuth();
-
   return (
     <AuthProvider>
       <IonApp>
@@ -80,9 +69,6 @@ const App: React.FC = () => {
               <Route exact path={`/login`}>
                 <LoginForm />
               </Route>
-              {/* <Route exact path={`/student-list`}>
-              <StudentList />
-            </Route> */}
               <Route exact path={`/student-add`}>
                 <StudentAdd />
               </Route>
@@ -92,7 +78,7 @@ const App: React.FC = () => {
               <Route exact path={`/kasir`}>
                 <KasirPage />
               </Route>
-              <Route exact path={`/transaction-history`} key={role}>
+              <Route exact path={`/transactionhistory`}>
                 <TransactionHistory />
               </Route>
               <Route exact path={`/dashboard`}>
@@ -133,8 +119,8 @@ const App: React.FC = () => {
                 <IonLabel>Kasir</IonLabel>
               </IonTabButton>
               <IonTabButton
-                tab="transaction-history"
-                href={`/transaction-history`}
+                tab="transactionhistory"
+                href={`/transactionhistory`}
               >
                 <IonIcon aria-hidden="true" icon={list} />
                 <IonLabel>Riwayat Transaksi</IonLabel>
