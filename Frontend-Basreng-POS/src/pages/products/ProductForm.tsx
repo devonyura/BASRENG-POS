@@ -198,6 +198,8 @@ const ProductForm: React.FC<Props> = ({
     setValue("descriptions", updated);
   };
 
+  console.log("initialCategory:", initialCategory);
+
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onDidDismiss}>
       <IonHeader>
@@ -275,11 +277,12 @@ const ProductForm: React.FC<Props> = ({
                 <Controller
                   control={control}
                   name="category_id"
-                  defaultValue={initialCategory ?? null}
                   render={({ field }) => (
                     <IonSelect
-                      value={field.value ?? undefined}
-                      onIonChange={(e) => field.onChange(e.detail.value)}
+                      value={field.value ? String(field.value) : undefined}
+                      onIonChange={(e) =>
+                        field.onChange(String(e.detail.value))
+                      }
                     >
                       {categories.map((c) => (
                         <IonSelectOption key={c.id} value={c.id}>

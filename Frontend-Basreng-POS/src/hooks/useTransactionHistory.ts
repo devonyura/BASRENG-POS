@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import dayjs from "dayjs";
 
 import { getTransactionHistory } from "./restAPIRequest";
@@ -12,6 +12,8 @@ interface Params {
   selectedDateFilter: string;
   selectedBranchId: string | null;
   selectedKasirId: string | null;
+
+  enabled?: boolean; // ✅ tambahan penting
 }
 
 export const useTransactionHistory = ({
@@ -20,6 +22,7 @@ export const useTransactionHistory = ({
   selectedDateFilter,
   selectedBranchId,
   selectedKasirId,
+  enabled = true,
 }: Params) => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [branchList, setBranchList] = useState<any[]>([]);
@@ -27,7 +30,7 @@ export const useTransactionHistory = ({
   const [isLoading, setIsLoading] = useState(false);
 
   // ======================
-  // Derive selected user INSIDE hook
+  // Selected user
   // ======================
   const selectedUser = useMemo(() => {
     return usersList.find((u) => u.id === selectedKasirId);
@@ -52,36 +55,11 @@ export const useTransactionHistory = ({
   };
 
   // ======================
-  // Load Transactions
+  // Load Master Data
   // ======================
-  const loadTransactions = async () => {
-    if (!role) return;
+  const loadMasterData = useCallback(async () => {
+    if (!enabled || !role) return;
 
-    setIsLoading(true);
-    try {
-      const { startDate, endDate } = buildDate();
-
-      const result = await getTransactionHistory({
-        username: selectedUser?.username || "",
-        branch: selectedBranchId
-          ? parseInt(selectedBranchId)
-          : undefined,
-        start_date: startDate,
-        end_date: endDate,
-      });
-
-      setTransactions(result);
-    } catch (err) {
-      console.error("Gagal load transaksi", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ======================
-  // Load Master
-  // ======================
-  const loadMasterData = async () => {
     try {
       const [branches, users] = await Promise.all([
         getBranches(),
@@ -93,22 +71,69 @@ export const useTransactionHistory = ({
     } catch (err) {
       console.error("Gagal load master", err);
     }
-  };
+  }, [enabled, role]);
+
+  // ======================
+  // Load Transactions
+  // ======================
+  const loadTransactions = useCallback(async () => {
+    if (!enabled || !role) return;
+
+    // ⛔ cegah fetch sebelum data siap
+    if (selectedBranchId === null && role !== "admin") return;
+
+    try {
+      setIsLoading(true);
+
+      const { startDate, endDate } = buildDate();
+
+      const result = await getTransactionHistory({
+        username: selectedUser?.username || "",
+        branch: selectedBranchId
+          ? parseInt(selectedBranchId)
+          : undefined,
+        start_date: startDate,
+        end_date: endDate,
+      });
+
+      setTransactions(result || []); // 🔥 amanin null
+    } catch (err) {
+      console.error("Gagal load transaksi", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    enabled,
+    role,
+    selectedBranchId,
+    selectedUser,
+    selectedDateFilter,
+  ]);
 
   // ======================
   // Effects
   // ======================
   useEffect(() => {
-    if (!role) return;
     loadMasterData();
-  }, [role]);
+  }, [loadMasterData]);
 
   useEffect(() => {
-    // tunggu usersList siap supaya selectedUser valid
-    if (!role) return;
+    if (!enabled || !role) return;
+
+    // ⛔ tunggu semua param siap
+    if (role === "kasir") {
+      if (!selectedBranchId || !selectedKasirId) return;
+    }
 
     loadTransactions();
-  }, [role, selectedDateFilter, selectedBranchId, selectedKasirId, usersList]);
+  }, [
+    enabled,
+    role,
+    selectedBranchId,
+    selectedKasirId,
+    selectedDateFilter,
+    loadTransactions,
+  ]);
 
   return {
     transactions,

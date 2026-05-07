@@ -80,7 +80,7 @@ class ProductsController extends ResourceController
       'pv.product_id = p.id',
       'left'
     );
-
+    $builder->where('pv.deleted_at', null);
     $builder->orderBy('p.id', 'ASC');
 
     $result = $builder->get()->getResultArray();

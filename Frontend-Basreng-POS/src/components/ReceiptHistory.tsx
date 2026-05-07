@@ -21,6 +21,7 @@ import { getBranch } from "../hooks/restAPIRequest";
 import { useAuth } from "../hooks/useAuthCookie";
 import "./Receipt.css";
 import { textAlign } from "html2canvas/dist/types/css/property-descriptors/text-align";
+import { Reseller } from "../pages/kasir/TransactionHistoryDetail";
 
 interface ReceiptHistoryProps {
   username: string;
@@ -53,6 +54,7 @@ interface ReceiptHistoryProps {
   date?: string;
   branch_name: string;
   branch_address: string;
+  reseller: Reseller | undefined;
 }
 
 export interface BranchData {
@@ -80,6 +82,7 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
       date,
       branch_name,
       branch_address,
+      reseller,
     } = props;
 
     // const [branchData, setBranchData] = useState<BranchData | null>(null);
@@ -98,6 +101,11 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
 
     //   fetchBranch();
     // }, [props.branch_id]);
+
+    const phone = reseller?.phone.slice(
+      reseller?.phone.length - 4,
+      reseller?.phone.length,
+    );
 
     return (
       <div className="receipt-container" ref={ref}>
@@ -128,6 +136,14 @@ const ReceiptHistory = React.forwardRef<HTMLDivElement, ReceiptHistoryProps>(
                 <span></span>
               </th>
             </tr>
+            {reseller && (
+              <tr>
+                <th className="small-text" colSpan={3}>
+                  Reseller: {reseller.name}
+                </th>
+                <th>no telp: 08XX XXXX {phone}</th>
+              </tr>
+            )}
           </thead>
           <tbody>
             {cartItems.map((item) => (

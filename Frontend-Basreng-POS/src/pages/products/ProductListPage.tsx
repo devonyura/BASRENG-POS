@@ -98,7 +98,7 @@ const ProductListPage: React.FC = () => {
     // const info = editingProduct ? "Diubah" : "Ditambah";
     setShowModal(false);
     setSelectedCategoryId(null);
-    fetchProducts();
+    fetchInitialData();
     setAlertMessage({ title: "Berhasil", message: `Proses Berhasil!` });
     setShowAlert(true);
   };
@@ -226,7 +226,10 @@ const ProductListPage: React.FC = () => {
           isOpen={showForm}
           initialProduct={selectedProduct}
           initialCategory={Number(selectedCategoryId)}
-          onDidDismiss={() => setShowForm(false)}
+          onDidDismiss={() => {
+            setShowForm(false);
+            fetchInitialData();
+          }}
           onSuccess={handleSuccess}
         />
         <IonAlert

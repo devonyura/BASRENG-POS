@@ -28,6 +28,13 @@ interface TransactionHistoryDetailProps {
   onDidDismiss: () => void | null;
 }
 
+export interface Reseller {
+  id: string;
+  name: string;
+  phone: string;
+  address: string;
+}
+
 export interface TransactionDetailItem {
   transaction_id: string;
   product_name: string;
@@ -68,6 +75,7 @@ export interface Transaction {
 export interface TransactionHistoryData {
   transactions: Transaction;
   transaction_details: TransactionDetailItem[];
+  reseller?: Reseller;
 }
 
 const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
@@ -137,7 +145,9 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
           storeAddress: transactionData?.transactions.branch_address,
         },
         transaction_details: transactionData?.transaction_details,
+        reseller: transactionData?.reseller ? transactionData?.reseller : null,
       };
+
       console.info(payload);
       const base64 = await generateReceiptImage(payload);
 
@@ -238,6 +248,7 @@ const TransactionHistoryDetail: React.FC<TransactionHistoryDetailProps> = ({
               date={transactionData.transactions.date_time}
               branch_name={transactionData.transactions.branch_name}
               branch_address={transactionData.transactions.branch_address}
+              reseller={transactionData.reseller}
             />
           )}
           {transactionData?.transactions.payment_method !== "cash" && (

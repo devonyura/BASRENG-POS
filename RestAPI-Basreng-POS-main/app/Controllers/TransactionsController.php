@@ -295,7 +295,26 @@ class TransactionsController extends ResourceController
         'left' // 🔥 WAJIB
       );
 
+      $resellerData = null;
+      if (!empty($transaction['reseller_id']) && $transaction['reseller_id'] !== null) {
+        // Ambil data reseller berdasarkan reseller_id
+        $builderReseller =  $db->table('resellers');
+        $builderReseller->select('
+          resellers.id,
+          resellers.name,
+          resellers.phone,
+          resellers.address,
+        ');
+        $builderReseller->join('transactions', 'transactions.reseller_id = resellers.id');
+        $builderReseller->where('resellers.id', $transaction['reseller_id']);
+        $resellerData = $builderReseller->get()->getFirstRow();
+      }
+
+
+
+
       $builderDetail->where('transaction_details.transaction_id', $transaction['id']);
+      // $builderDetail->limit();
       $details = $builderDetail->get()->getResultArray();
 
       // Gabungkan Hasil
@@ -304,6 +323,13 @@ class TransactionsController extends ResourceController
         'transaction_details' => $details
       ];
 
+      if (!empty($transaction['reseller_id']) && $transaction['reseller_id'] !== null) {
+        $result = [
+          'transactions'        => $transaction,
+          'transaction_details' => $details,
+          'reseller' => $resellerData
+        ];
+      }
 
       $this->createLog("SHOW_TRANSACTION", ['SUCCESS']);
       return $this->respond([
